@@ -2,35 +2,54 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 const Report = sequelize.define('Report', {
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
+  id: { 
+    type: DataTypes.INTEGER, 
+    primaryKey: true, 
+    autoIncrement: true 
   },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: false
+  titulo: 
+  { 
+    type: DataTypes.STRING, 
+    allowNull: false 
   },
-  category: {
-    type: DataTypes.ENUM('saneamiento','salud publica', 'medio_ambiente', 'infraestructura', 'seguridad', 'otros'),
-    allowNull: false
+  descripcion: 
+  {
+     type: DataTypes.TEXT, 
+    allowNull: false 
   },
-  latitude: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  },
-  longitude: {
-    type: DataTypes.FLOAT,
-    allowNull: false
-  },
-  status: {
-    type: DataTypes.ENUM('pendiente', 'en_progreso', 'resuelto', 'rechazado'),
-    defaultValue: 'pendiente'
-  },
-  evidenceUrl: {
+  categoria_id: 
+  { 
+    type: DataTypes.INTEGER, 
+    allowNull: false 
+  }, 
+  ubicacion: 
+  { 
     type: DataTypes.STRING
-  }
+   },
+  latitud: 
+  { 
+    type: DataTypes.FLOAT,
+     allowNull: false 
+    },
+  longitud: 
+  { 
+    type: DataTypes.FLOAT, 
+    allowNull: false 
+  },
+  estado: 
+  { 
+    type: DataTypes.ENUM('nuevo', 'en_proceso', 'resuelto', 'cerrado'), 
+    defaultValue: 'nuevo' 
+  },
+  prioridad: { type: DataTypes.ENUM('baja', 'media', 'alta'), defaultValue: 'media' },
+  imagen_url: { type: DataTypes.STRING },
+  usuario_id: { type: DataTypes.INTEGER, allowNull: false }, 
+  asignado_a: { type: DataTypes.INTEGER },
 }, {
-  timestamps: true
+  tableName: 'reportes',
+  timestamps: true, 
+  createdAt: 'fecha_creacion',
+  updatedAt: 'fecha_actualizacion'
 });
 
 module.exports = Report;

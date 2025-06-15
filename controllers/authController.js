@@ -1,31 +1,35 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 const { jwtSecret } = require('../config/config');
 
 const authController = {
   async register(req, res) {
     try {
-      const { name, email, password } = req.body;
-      
+      const { nombre, email, password } = req.body;
+
       // Verifica si el usuario ya existe
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
         return res.status(400).json({ message: 'El correo ya está registrado' });
       }
 
-      // Crea el nuevo usuario
-      const user = await User.create({ name, email, password, role: 'citizen' });
-      
-      // Genera token JWT
-      const token = jwt.sign({ id: user.id, role: user.role }, jwtSecret, { expiresIn: '1h' });
+      // Encripta la contraseña
+      const password_hash = await bcrypt.hash(password, 10);
 
-      res.status(201).json({ 
+      // Crea el nuevo usuario
+      const user = await User.create({ nombre, email, password_hash, rol: 'ciudadano' });
+
+      // Genera token JWT
+      const token = jwt.sign({ id: user.id, rol: user.rol }, jwtSecret, { expiresIn: '1h' });
+
+      res.status(201).json({
         message: 'Usuario registrado exitosamente',
         user: {
           id: user.id,
-          name: user.name,
+          nombre: user.nombre,
           email: user.email,
-          role: user.role
+          rol: user.rol
         },
         token
       });
@@ -37,7 +41,7 @@ const authController = {
   async login(req, res) {
     try {
       const { email, password } = req.body;
-      
+
       // Busca al usuario
       const user = await User.findOne({ where: { email } });
       if (!user) {
@@ -45,22 +49,22 @@ const authController = {
       }
 
       // Verifica la contraseña
-      const isMatch = await user.comparePassword(password);
+      const isMatch = await bcrypt.compare(password, user.password_hash);
       if (!isMatch) {
         return res.status(400).json({ message: 'Credenciales inválidas' });
       }
 
       // Genera token JWT
-      const token = jwt.sign({ id: user.id, role: user.role }, jwtSecret, { expiresIn: '1h' });
+      const token = jwt.sign({ id: user.id, rol: user.rol }, jwtSecret, { expiresIn: '1h' });
 
       res.json({
         message: 'Inicio de sesión exitoso',
         user: {
           id: user.id,
-          name: user.name,
+          nombre: user.nombre,
           email: user.email,
-          role: user.role,
-          points: user.points
+          rol: user.rol,
+          puntos: user.puntos
         },
         token
       });

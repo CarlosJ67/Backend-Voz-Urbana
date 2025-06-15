@@ -4,12 +4,13 @@ const cors = require('cors');
 const app = express();
 const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
-
+const categoriasRoutes = require('./routes/categorias');
 // Middlewares 
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/categorias', categoriasRoutes);
 const db = require('./config/database');
 
 // Test de conexión a la base de datos

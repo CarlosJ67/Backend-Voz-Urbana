@@ -1,31 +1,43 @@
 const { Report, User } = require('../models');
 const Sequelize = require('sequelize');
 const reportsController = {
-  async createReport(req, res) {
-    try {
-      const { title, description, category, latitude, longitude } = req.body;
-      const userId = req.user.id;
+async createReport(req, res) {
+  try {
+    const {
+      titulo,
+      descripcion,
+      categoria_id,
+      latitud,
+      longitud,
+      ubicacion,
+      imagen_url,
+      prioridad
+    } = req.body;
+    const usuario_id = req.user.id;
 
-      const report = await Report.create({
-        title,
-        description,
-        category,
-        latitude,
-        longitude,
-        userId
-      });
+    const report = await Report.create({
+      titulo,
+      descripcion,
+      categoria_id,
+      latitud,
+      longitud,
+      ubicacion,
+      imagen_url,
+      usuario_id,
+      prioridad
+    });
 
-      // Añade puntos al usuario por crear un reporte
-      await User.increment('points', { by: 10, where: { id: userId } });
+    // Añade puntos al usuario por crear un reporte
+    await User.increment('puntos', { by: 10, where: { id: usuario_id } });
 
-      res.status(201).json({
-        message: 'Reporte creado exitosamente',
-        report
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Error al crear reporte', error: error.message });
-    }
-  },
+    res.status(201).json({
+      message: 'Reporte creado exitosamente',
+      report
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al crear reporte', error: error.message });
+  }
+},
 
   async getAllReports(req, res) {
     try {
