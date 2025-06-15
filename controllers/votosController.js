@@ -5,14 +5,14 @@ exports.votar = async (req, res) => {
     const { reporte_id, tipo_voto } = req.body;
     const usuario_id = req.user.id;
 
-    // Evita votos duplicados (por unique index)
+    // Evita votos duplicados 
     const [voto, created] = await VotoReporte.findOrCreate({
       where: { reporte_id, usuario_id },
       defaults: { tipo_voto }
     });
 
     if (!created) {
-      // Si ya existe, actualiza el voto
+      
       voto.tipo_voto = tipo_voto;
       await voto.save();
       return res.json({ message: 'Voto actualizado', voto });
