@@ -39,21 +39,21 @@ async createReport(req, res) {
   }
 },
 
-  async getAllReports(req, res) {
-    try {
-      const reports = await Report.findAll({
-        include: [{
-          model: User,
-          attributes: ['id', 'name']
-        }],
-        order: [['createdAt', 'DESC']]
-      });
-      
-      res.json(reports);
-    } catch (error) {
-      res.status(500).json({ message: 'Error al obtener reportes', error: error.message });
-    }
-  },
+async getAllReports(req, res) {
+  try {
+    const reports = await Report.findAll({
+      include: [{
+        model: User,
+        attributes: ['id', 'nombre', 'email']
+      }],
+      order: [['fecha_creacion', 'DESC']]
+    });
+
+    res.json(reports);
+  } catch (error) {
+    res.status(500).json({ message: 'Error al obtener reportes', error: error.message });
+  }
+},
 
   async getReportsByLocation(req, res) {
     try {
