@@ -6,13 +6,19 @@ const authRoutes = require('./routes/auth');
 const reportRoutes = require('./routes/reports');
 const categoriasRoutes = require('./routes/categorias');
 const comentariosRoutes = require('./routes/comentarios');
+const votosRoutes = require('./routes/votos');
+
 // Middlewares 
 app.use(cors());
 app.use(express.json());
+
+
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
+app.use('/api/votos', votosRoutes);
+
 
 const db = require('./config/database');
 
