@@ -75,7 +75,64 @@ async getAllReports(req, res) {
     } catch (error) {
       res.status(500).json({ message: 'Error al obtener reportes por ubicación', error: error.message });
     }
+  },
+    async updateReport(req, res) {
+  try {
+    const { id } = req.params;
+    const usuario_id = req.user.id;
+
+    const report = await Report.findByPk(id);
+    if (!report) {
+      return res.status(404).json({ message: 'Reporte no encontrado' });
+    }
+
+    // Opcional: Validar si el usuario que creó el reporte es quien lo edita
+    if (report.usuario_id !== usuario_id) {
+      return res.status(403).json({ message: 'No autorizado para editar este reporte' });
+    }
+
+    const camposActualizables = [
+      'titulo', 'descripcion', 'categoria_id',
+      'latitud', 'longitud', 'ubicacion',
+      'imagen_url', 'prioridad', 'estado', 'asignado_a'
+    ];
+
+    camposActualizables.forEach(campo => {
+      if (req.body[campo] !== undefined) {
+        report[campo] = req.body[campo];
+      }
+    });
+
+    await report.save();
+
+    res.json({ message: 'Reporte actualizado correctamente', report });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar el reporte', error: error.message });
   }
+},
+
+async deleteReport(req, res) {
+  try {
+    const { id } = req.params;
+    const usuario_id = req.user.id;
+
+    const report = await Report.findByPk(id);
+    if (!report) {
+      return res.status(404).json({ message: 'Reporte no encontrado' });
+    }
+
+     // Solo el admin o el creador del reporte pueden eliminarlo
+    if (req.user.rol !== 'admin' && report.usuario_id !== req.user.id) {
+  return res.status(403).json({ message: 'No autorizado para eliminar este reporte' });
+}
+
+    await report.destroy();
+
+    res.json({ message: 'Reporte eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar el reporte', error: error.message });
+  }
+}
 };
 
 module.exports = reportsController;
