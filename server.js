@@ -9,6 +9,7 @@ const reportRoutes = require('./routes/reports');
 const categoriasRoutes = require('./routes/categorias');
 const comentariosRoutes = require('./routes/comentarios');
 const votosRoutes = require('./routes/votos');
+const utilsRoutes = require('./routes/utils');
 
 // Middlewares 
 app.use(cors());
@@ -20,7 +21,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/comentarios', comentariosRoutes);
 app.use('/api/votos', votosRoutes);
-
+app.use('/api/utils', utilsRoutes);
 
 const db = require('./config/database');
 
