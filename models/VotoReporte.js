@@ -18,7 +18,11 @@ const VotoReporte = sequelize.define('VotoReporte', {
     type: DataTypes.INTEGER,
     allowNull: false 
 },
-  tipo_voto: { type: DataTypes.ENUM('up', 'down'), allowNull: false },
+  tipo_voto: { 
+    type: DataTypes.ENUM('up', 'down', 'none'), 
+    allowNull: false,
+    defaultValue: 'none'
+  },
   fecha_voto: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 }, {
   tableName: 'votos_reportes',

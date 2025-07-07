@@ -100,5 +100,83 @@ router.get('/', reportsController.getAllReports);
  *         description: Lista de reportes cercanos
  */
 router.get('/location/:lat/:lng/:radius', reportsController.getReportsByLocation);
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   patch:
+ *     summary: Actualizar parcialmente un reporte
+ *     tags: [Reportes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del reporte a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descripcion:
+ *                 type: string
+ *               categoria_id:
+ *                 type: integer
+ *               ubicacion:
+ *                 type: string
+ *               latitud:
+ *                 type: number
+ *               longitud:
+ *                 type: number
+ *               imagen_url:
+ *                 type: string
+ *               prioridad:
+ *                 type: string
+ *                 enum: [baja, media, alta]
+ *               estado:
+ *                 type: string
+ *                 enum: [nuevo, en_proceso, resuelto, cerrado]
+ *               asignado_a:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Reporte actualizado correctamente
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Reporte no encontrado
+ */
+router.patch('/:id', authMiddleware, reportsController.updateReport);
+
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   delete:
+ *     summary: Eliminar un reporte
+ *     tags: [Reportes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del reporte a eliminar
+ *     responses:
+ *       200:
+ *         description: Reporte eliminado correctamente
+ *       403:
+ *         description: No autorizado
+ *       404:
+ *         description: Reporte no encontrado
+ */
+router.delete('/:id', authMiddleware, reportsController.deleteReport);
 
 module.exports = router;

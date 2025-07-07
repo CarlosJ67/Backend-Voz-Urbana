@@ -64,7 +64,7 @@ router.post('/', auth, isAdmin, categoriasController.createCategoria);
 /**
  * @swagger
  * /api/categorias/{id}:
- *   put:
+ *   patch:
  *     summary: Actualizar una categoría
  *     tags: [Categorias]
  *     security:
@@ -101,7 +101,8 @@ router.post('/', auth, isAdmin, categoriasController.createCategoria);
  *       404:
  *         description: Categoría no encontrada
  */
-router.put('/:id', auth, isAdmin, categoriasController.updateCategoria);
+router.patch('/:id', auth, isAdmin, categoriasController.updateCategoria);
+
 
 /**
  * @swagger

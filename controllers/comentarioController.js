@@ -30,3 +30,56 @@ exports.getComentariosByReporte = async (req, res) => {
     res.status(500).json({ message: 'Error al obtener comentarios', error: error.message });
   }
 };
+
+// PATCH - Actualizar comentario
+exports.updateComentario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { texto } = req.body;
+    const usuario_id = req.user.id;
+
+    const comentario = await Comentario.findByPk(id);
+
+    if (!comentario || !comentario.activo) {
+      return res.status(404).json({ message: 'Comentario no encontrado o inactivo' });
+    }
+
+    // Solo autor puede editar
+    if (comentario.usuario_id !== usuario_id) {
+      return res.status(403).json({ message: 'No tienes permisos para editar este comentario' });
+    }
+
+    comentario.texto = texto || comentario.texto;
+    await comentario.save();
+
+    res.json({ message: 'Comentario actualizado', comentario });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al actualizar comentario', error: error.message });
+  }
+};
+
+// DELETE - Eliminar comentario (lógico)
+exports.deleteComentario = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const usuario_id = req.user.id;
+
+    const comentario = await Comentario.findByPk(id);
+
+    if (!comentario || !comentario.activo) {
+      return res.status(404).json({ message: 'Comentario no encontrado o ya inactivo' });
+    }
+     // Solo el admin o el creador del comentario pueden eliminarlo
+    if (req.user.rol !== 'admin' && comentario.usuario_id !== usuario_id)  {
+      return res.status(403).json({ message: 'No autorizado para eliminar este comentario' });
+    }
+
+    comentario.activo = false;
+    await comentario.save();
+
+    res.json({ message: 'Comentario eliminado correctamente' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error al eliminar comentario', error: error.message });
+  }
+};
+
