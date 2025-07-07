@@ -9,12 +9,11 @@ const auth = require('../middleware/auth');
  *   name: Votos
  *   description: Votación de reportes ciudadanos
  */
-
 /**
  * @swagger
- * /api/votos:
+ * /api/votos/up:
  *   post:
- *     summary: Votar por un reporte
+ *     summary: Votar positivamente un reporte (upvote)
  *     tags: [Votos]
  *     security:
  *       - bearerAuth: []
@@ -24,23 +23,53 @@ const auth = require('../middleware/auth');
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - reporte_id
  *             properties:
  *               reporte_id:
  *                 type: integer
- *                 example: 15
- *               tipo_voto:
- *                 type: string
- *                 enum: [up, down]
- *                 example: up
+ *                 example: 10
  *     responses:
  *       201:
- *         description: Voto registrado
+ *         description: Voto up registrado
  *       200:
- *         description: Voto actualizado
- *       401:
- *         description: Token no proporcionado o inválido
+ *         description: Voto cambiado o eliminado (none)
+ *       500:
+ *         description: Error del servidor al votar
  */
-router.post('/', auth, votosController.votar);
+router.post('/up', auth, votosController.votarUp);
+
+/**
+ * @swagger
+ * /api/votos/down:
+ *   post:
+ *     summary: Votar negativamente un reporte (downvote)
+ *     tags: [Votos]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reporte_id
+ *             properties:
+ *               reporte_id:
+ *                 type: integer
+ *                 example: 10
+ *     responses:
+ *       201:
+ *         description: Voto down registrado
+ *       200:
+ *         description: Voto cambiado o eliminado (none)
+ *       500:
+ *         description: Error del servidor al votar
+ */
+router.post('/down', auth, votosController.votarDown);
+
+
 
 /**
  * @swagger
