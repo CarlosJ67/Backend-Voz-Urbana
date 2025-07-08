@@ -34,20 +34,39 @@ function getRandomName() {
   return `${nombre} ${apellido1} ${apellido2}`;
 }
 
+function getRandomDateInPastYears(years = 5) {
+  const now = new Date();
+  const past = new Date();
+  past.setFullYear(now.getFullYear() - years);
+  // Genera un timestamp aleatorio entre 'past' y 'now - 1 día'
+  const max = now.getTime() - 24 * 60 * 60 * 1000;
+  const min = past.getTime();
+  return new Date(Math.floor(Math.random() * (max - min)) + min);
+}
+
+function getRandomDateAfter(date, years = 0) {
+  const now = new Date();
+  const min = date.getTime();
+  const max = now.getTime() - 24 * 60 * 60 * 1000;
+  if (min >= max) return new Date(min); // Si la fecha de registro es la más reciente posible
+  return new Date(Math.floor(Math.random() * (max - min)) + min);
+}
+
 exports.generarUsuariosLote = async (req, res) => {
   try {
-    const { totalAdmins = 2, totalCiudadanos = 10000, offset = 0 } = req.body || {};
+    const { totalAdmins = 2, totalCiudadanos = 1998, offset = 0 } = req.body || {};
     const password_hash = await bcrypt.hash('123456', 10);
 
-    // Limita la cantidad máxima por lote para evitar saturar el servidor
-    if (totalAdmins > 1000 || totalCiudadanos > 100000) {
-      return res.status(400).json({ message: 'Demasiados usuarios solicitados. Usa valores menores.' });
+    if (totalAdmins + totalCiudadanos > 2000) {
+      return res.status(400).json({ message: 'Máximo 2000 usuarios por petición.' });
     }
 
-    const timestamp = Date.now(); // Para emails únicos por lote
+    const timestamp = Date.now();
 
     const admins = [];
     for (let i = 0; i < totalAdmins; i++) {
+      const fecha_registro = getRandomDateInPastYears();
+      const fecha_actualizacion = getRandomDateAfter(fecha_registro);
       admins.push({
         nombre: getRandomName(),
         email: `admin${timestamp}_${offset + i}@demo.com`,
@@ -55,13 +74,15 @@ exports.generarUsuariosLote = async (req, res) => {
         rol: 'admin',
         puntos: 100,
         activo: true,
-        fecha_registro: new Date(),
-        fecha_actualizacion: new Date()
+        fecha_registro,
+        fecha_actualizacion
       });
     }
 
     const ciudadanos = [];
     for (let i = 0; i < totalCiudadanos; i++) {
+      const fecha_registro = getRandomDateInPastYears();
+      const fecha_actualizacion = getRandomDateAfter(fecha_registro);
       ciudadanos.push({
         nombre: getRandomName(),
         email: `usuario${timestamp}_${offset + i}@demo.com`,
@@ -69,8 +90,8 @@ exports.generarUsuariosLote = async (req, res) => {
         rol: 'ciudadano',
         puntos: Math.floor(Math.random() * 100),
         activo: true,
-        fecha_registro: new Date(),
-        fecha_actualizacion: new Date()
+        fecha_registro,
+        fecha_actualizacion
       });
     }
 
