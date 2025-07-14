@@ -99,7 +99,7 @@ const descripcionesBase = [
 ];
 
 // Sistema de variaciones mejorado
-function getRandomTitulo(i, categoriaNombre = '') {
+function getRandomTitulo(i, categoriaNombre = '', offset = 0) {
   const base = titulosBase[Math.floor(Math.random() * titulosBase.length)];
   
   // Sistema de variaciones
@@ -145,7 +145,7 @@ function getRandomDescripcion(i, titulo = '') {
   return combinaciones[Math.floor(Math.random() * combinaciones.length)];
 }
 
-// Funciones utilitarias (se mantienen igual)
+// Funciones utilitarias
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -194,7 +194,7 @@ exports.generarReportesLote = async (req, res) => {
       const categoria_id = Array.from(categoriaMap.keys())[getRandomInt(0, categoriaMap.size - 1)];
       const categoria_nombre = categoriaMap.get(categoria_id);
       const usuario_id = usuarioIds[getRandomInt(0, usuarioIds.length - 1)];
-      const titulo = getRandomTitulo(i, categoria_nombre);
+      const titulo = getRandomTitulo(i, categoria_nombre, offset);
       const descripcion = getRandomDescripcion(i, titulo);
       const estado = estados[getRandomInt(0, estados.length - 1)];
       const prioridad = prioridades[getRandomInt(0, prioridades.length - 1)];
@@ -223,6 +223,7 @@ exports.generarReportesLote = async (req, res) => {
     await Report.bulkCreate(reportes);
     res.json({ 
       message: `Reportes generados: ${reportes.length}`,
+      nextOffset: offset + totalReportes,
       detalles: {
         titulosUnicos: new Set(reportes.map(r => r.titulo.split('#')[0])).size,
         descripcionesUnicas: new Set(reportes.map(r => r.descripcion.split('.')[0])).size
