@@ -28,7 +28,7 @@ const utilsComentariosController = require('../controllers/utilsComentariosContr
  *       200:
  *         description: Usuarios generados exitosamente
  */
-router.post('/ejecutar-seeder-usuarios', (req, res) => {
+router.post('/generar-usuarios-lote', (req, res) => {
   const { totalAdmins = 2, totalCiudadanos = 999998, offset = 0 } = req.body || {};
   const cmd = `python seeders/seeder_usuarios.py ${totalAdmins} ${totalCiudadanos} ${offset}`;
   exec(cmd, (error, stdout, stderr) => {
