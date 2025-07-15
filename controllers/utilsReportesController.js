@@ -154,21 +154,69 @@ function getRandomFloat(min, max, decimals = 6) {
   return parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
 }
 
-function getRandomDateInPastMonths(months = 24) {
+function getDateBasedOnStatus(status) {
   const now = new Date();
-  const past = new Date();
-  past.setMonth(now.getMonth() - months);
-  const max = now.getTime() - 24 * 60 * 60 * 1000;
-  const min = past.getTime();
-  return new Date(Math.floor(Math.random() * (max - min)) + min);
+  const oneDay = 24 * 60 * 60 * 1000; // milisegundos en un día
+  
+  switch(status) {
+    case 'nuevo':
+      // Reportes nuevos: últimos 3 días (0-3 días atrás)
+      const daysAgoNew = getRandomInt(0, 3);
+      return new Date(now.getTime() - (daysAgoNew * oneDay));
+      
+    case 'en_proceso':
+      // Reportes en proceso: últimos 7-15 días
+      const daysAgoInProgress = getRandomInt(7, 15);
+      return new Date(now.getTime() - (daysAgoInProgress * oneDay));
+      
+    case 'resuelto':
+      // Reportes resueltos: últimos 30-60 días
+      const daysAgoResolved = getRandomInt(30, 60);
+      return new Date(now.getTime() - (daysAgoResolved * oneDay));
+      
+    case 'cerrado':
+      // Reportes cerrados: 6-24 meses atrás
+      const monthsAgoClosed = getRandomInt(6, 24);
+      const past = new Date();
+      past.setMonth(now.getMonth() - monthsAgoClosed);
+      return past;
+      
+    default:
+      return new Date();
+  }
 }
 
-function getRandomDateAfter(date, maxDays = 30) {
+function getUpdateDateBasedOnStatus(creationDate, status) {
   const now = new Date();
-  const min = date.getTime();
-  const max = Math.min(now.getTime() - 24 * 60 * 60 * 1000, min + maxDays * 24 * 60 * 60 * 1000);
-  if (min >= max) return new Date(min);
-  return new Date(Math.floor(Math.random() * (max - min)) + min);
+  const oneDay = 24 * 60 * 60 * 1000;
+  
+  switch(status) {
+    case 'nuevo':
+      // 90% de probabilidad de no tener actualización, 10% de tener una reciente
+      return Math.random() < 0.9 ? creationDate : 
+        new Date(creationDate.getTime() + getRandomInt(1, 3) * oneDay);
+        
+    case 'en_proceso':
+      // Actualizado entre 1-7 días después de creación
+      const maxDays = Math.min(7, (now - creationDate) / oneDay);
+      return maxDays <= 1 ? creationDate :
+        new Date(creationDate.getTime() + getRandomInt(1, maxDays) * oneDay);
+        
+    case 'resuelto':
+      // Resuelto entre 7-30 días después de creación
+      const resolvedDays = getRandomInt(7, 30);
+      return new Date(creationDate.getTime() + resolvedDays * oneDay);
+      
+    case 'cerrado':
+      // Cerrado entre 1-3 meses después de creación
+      const closedMonths = getRandomInt(1, 3);
+      const closedDate = new Date(creationDate);
+      closedDate.setMonth(creationDate.getMonth() + closedMonths);
+      return closedDate > now ? now : closedDate;
+      
+    default:
+      return creationDate;
+  }
 }
 
 exports.generarReportesLote = async (req, res) => {
@@ -200,8 +248,8 @@ exports.generarReportesLote = async (req, res) => {
       const prioridad = prioridades[getRandomInt(0, prioridades.length - 1)];
       const latitud = getRandomFloat(19.20, 19.60);
       const longitud = getRandomFloat(-99.30, -99.00);
-      const fecha_creacion = getRandomDateInPastMonths(24);
-      const fecha_actualizacion = getRandomDateAfter(fecha_creacion, 30);
+      const fecha_creacion = getDateBasedOnStatus(estado);
+      const fecha_actualizacion = getUpdateDateBasedOnStatus(fecha_creacion, estado);
 
       reportes.push({
         titulo,
@@ -226,7 +274,11 @@ exports.generarReportesLote = async (req, res) => {
       nextOffset: offset + totalReportes,
       detalles: {
         titulosUnicos: new Set(reportes.map(r => r.titulo.split('#')[0])).size,
-        descripcionesUnicas: new Set(reportes.map(r => r.descripcion.split('.')[0])).size
+        descripcionesUnicas: new Set(reportes.map(r => r.descripcion.split('.')[0])).size,
+        estadosGenerados: reportes.reduce((acc, r) => {
+          acc[r.estado] = (acc[r.estado] || 0) + 1;
+          return acc;
+        }, {})
       }
     });
   } catch (error) {
