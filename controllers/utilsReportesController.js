@@ -146,6 +146,19 @@ function getRandomDescripcion(i, titulo = '') {
 }
 
 // Funciones utilitarias
+
+function addRandomTime(date, minMinutes = 0, maxMinutes = 1440) {
+  // Suma entre minMinutes y maxMinutes minutos aleatorios
+  const minutos = getRandomInt(minMinutes, maxMinutes);
+  const segundos = getRandomInt(0, 59);
+  const milisegundos = getRandomInt(0, 999);
+  const nuevaFecha = new Date(date);
+  nuevaFecha.setMinutes(nuevaFecha.getMinutes() + minutos);
+  nuevaFecha.setSeconds(nuevaFecha.getSeconds() + segundos);
+  nuevaFecha.setMilliseconds(milisegundos);
+  return nuevaFecha;
+}
+
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -248,9 +261,19 @@ exports.generarReportesLote = async (req, res) => {
       const prioridad = prioridades[getRandomInt(0, prioridades.length - 1)];
       const latitud = getRandomFloat(19.20, 19.60);
       const longitud = getRandomFloat(-99.30, -99.00);
-      const fecha_creacion = getDateBasedOnStatus(estado);
-      const fecha_actualizacion = getUpdateDateBasedOnStatus(fecha_creacion, estado);
+      
+      // Genera fecha de creación con hora/min/seg/miliseg aleatorios
+      const fecha_creacion_base = getDateBasedOnStatus(estado);
+      const fecha_creacion = addRandomTime(fecha_creacion_base);
 
+      // Genera fecha de actualización posterior y diferente a la de creación
+      let fecha_actualizacion_base = getUpdateDateBasedOnStatus(fecha_creacion, estado);
+      let fecha_actualizacion = addRandomTime(fecha_actualizacion_base, 1, 1440);
+
+      // Si por alguna razón la actualización queda antes o igual que la creación, corrige:
+      if (fecha_actualizacion <= fecha_creacion) {
+        fecha_actualizacion = new Date(fecha_creacion.getTime() + getRandomInt(1, 1440) * 60 * 1000);
+      }
       reportes.push({
         titulo,
         descripcion,
