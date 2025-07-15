@@ -1,4 +1,5 @@
 const express = require('express');
+const {exec} = require('child_process');
 const router = express.Router();
 const utilsController = require('../controllers/utilsUsuariosController');
 const utilsReportesController = require('../controllers/utilsReportesController');
@@ -27,8 +28,16 @@ const utilsComentariosController = require('../controllers/utilsComentariosContr
  *       200:
  *         description: Usuarios generados exitosamente
  */
-router.post('/generar-usuarios-lote', utilsController.generarUsuariosLote);
-
+router.post('/ejecutar-seeder-usuarios', (req, res) => {
+  const { totalAdmins = 2, totalCiudadanos = 999998, offset = 0 } = req.body || {};
+  const cmd = `python seeders/seeder_usuarios.py ${totalAdmins} ${totalCiudadanos} ${offset}`;
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      return res.status(500).json({ message: 'Error al ejecutar el seeder', error: error.message, stderr });
+    }
+    res.json({ message: 'Seeder ejecutado correctamente', stdout });
+  });
+});
 /**
  * @swagger
  * /api/utils/generar-reportes-lote:
