@@ -1,7 +1,7 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const reportsController = require('../controllers/reportsController');
-const authMiddleware = require('../middleware/auth');
+const reportsController = require("../controllers/reportsController");
+const authMiddleware = require("../middleware/auth");
 
 /**
  * @swagger
@@ -56,7 +56,7 @@ const authMiddleware = require('../middleware/auth');
  *       401:
  *         description: Token no proporcionado o inválido
  */
-router.post('/', authMiddleware, reportsController.createReport);
+router.post("/", authMiddleware, reportsController.createReport);
 
 /**
  * @swagger
@@ -68,7 +68,53 @@ router.post('/', authMiddleware, reportsController.createReport);
  *       200:
  *         description: Lista de reportes
  */
-router.get('/', reportsController.getAllReports);
+router.get("/", reportsController.getAllReports);
+
+/**
+ * @swagger
+ * /api/reports/{id}:
+ *   get:
+ *     summary: Obtener un reporte por ID
+ *     tags: [Reportes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del reporte
+ *     responses:
+ *       200:
+ *         description: Detalles del reporte
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                 titulo:
+ *                   type: string
+ *                 descripcion:
+ *                   type: string
+ *                 categoria_id:
+ *                   type: integer
+ *                 ubicacion:
+ *                   type: string
+ *                 latitud:
+ *                   type: number
+ *                 longitud:
+ *                   type: number
+ *                 estado:
+ *                   type: string
+ *                 prioridad:
+ *                   type: string
+ *                 User:
+ *                   type: object
+ *       404:
+ *         description: Reporte no encontrado
+ */
+router.get("/:id", reportsController.getReportById);
 
 /**
  * @swagger
@@ -104,7 +150,7 @@ router.get('/', reportsController.getAllReports);
  *       500:
  *         description: Error al obtener reportes del usuario
  */
-router.get('/user/:userId', reportsController.getReportsByUser);
+router.get("/user/:userId", reportsController.getReportsByUser);
 
 /**
  * @swagger
@@ -135,7 +181,10 @@ router.get('/user/:userId', reportsController.getReportsByUser);
  *       200:
  *         description: Lista de reportes cercanos
  */
-router.get('/location/:lat/:lng/:radius', reportsController.getReportsByLocation);
+router.get(
+  "/location/:lat/:lng/:radius",
+  reportsController.getReportsByLocation
+);
 
 /**
  * @swagger
@@ -189,7 +238,7 @@ router.get('/location/:lat/:lng/:radius', reportsController.getReportsByLocation
  *       404:
  *         description: Reporte no encontrado
  */
-router.patch('/:id', authMiddleware, reportsController.updateReport);
+router.patch("/:id", authMiddleware, reportsController.updateReport);
 
 /**
  * @swagger
@@ -214,6 +263,6 @@ router.patch('/:id', authMiddleware, reportsController.updateReport);
  *       404:
  *         description: Reporte no encontrado
  */
-router.delete('/:id', authMiddleware, reportsController.deleteReport);
+router.delete("/:id", authMiddleware, reportsController.deleteReport);
 
 module.exports = router;
