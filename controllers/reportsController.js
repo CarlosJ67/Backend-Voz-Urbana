@@ -76,6 +76,32 @@ async getAllReports(req, res) {
       res.status(500).json({ message: 'Error al obtener reportes por ubicación', error: error.message });
     }
   },
+
+  async getReportsByUser(req, res) {
+    try {
+      const { userId } = req.params;
+      
+      const reports = await Report.findAll({
+        where: {
+          usuario_id: userId
+        },
+        include: [{
+          model: User,
+          attributes: ['id', 'nombre', 'email']
+        }],
+        order: [['fecha_creacion', 'DESC']]
+      });
+
+      res.json({
+        message: `Reportes del usuario ${userId}`,
+        count: reports.length,
+        reports
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error al obtener reportes del usuario', error: error.message });
+    }
+  },
+
     async updateReport(req, res) {
   try {
     const { id } = req.params;

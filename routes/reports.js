@@ -72,6 +72,42 @@ router.get('/', reportsController.getAllReports);
 
 /**
  * @swagger
+ * /api/reports/user/{userId}:
+ *   get:
+ *     summary: Obtener todos los reportes de un usuario específico
+ *     tags: [Reportes]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: integer
+ *         required: true
+ *         description: ID del usuario
+ *     responses:
+ *       200:
+ *         description: Lista de reportes del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Reportes del usuario 1"
+ *                 count:
+ *                   type: integer
+ *                   example: 5
+ *                 reports:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *       500:
+ *         description: Error al obtener reportes del usuario
+ */
+router.get('/user/:userId', reportsController.getReportsByUser);
+
+/**
+ * @swagger
  * /api/reports/location/{lat}/{lng}/{radius}:
  *   get:
  *     summary: Obtener reportes por ubicación aproximada
@@ -100,6 +136,7 @@ router.get('/', reportsController.getAllReports);
  *         description: Lista de reportes cercanos
  */
 router.get('/location/:lat/:lng/:radius', reportsController.getReportsByLocation);
+
 /**
  * @swagger
  * /api/reports/{id}:
