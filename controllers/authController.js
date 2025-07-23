@@ -6,7 +6,7 @@ const { jwtSecret } = require('../config/jwt');
 const authController = {
   async register(req, res) {
     try {
-      const { nombre, email, password } = req.body;
+      const { nombre, email, password, rol } = req.body;
 
       // Verifica si el usuario ya existe
       const existingUser = await User.findOne({ where: { email } });
@@ -17,8 +17,8 @@ const authController = {
       // Encripta la contraseña
       const password_hash = await bcrypt.hash(password, 10);
 
-      // Crea el nuevo usuario
-      const user = await User.create({ nombre, email, password_hash, rol: 'ciudadano' });
+      // Crea el nuevo usuario (rol por defecto 'ciudadano' si no se especifica)
+      const user = await User.create({ nombre, email, password_hash, rol: rol || 'ciudadano' });
 
       // Genera token JWT
       const token = jwt.sign({ id: user.id, rol: user.rol }, jwtSecret, { expiresIn: '1h' });

@@ -24,6 +24,10 @@ const authController = require('../controllers/authController');
  *               password:
  *                 type: string
  *                 example: 123456
+ *               rol:
+ *                 type: string
+ *                 example: ciudadano
+ *                 description: Rol del usuario (ciudadano, admin)
  *     responses:
  *       201:
  *         description: Usuario registrado exitosamente
