@@ -23,7 +23,7 @@ const utilsComentariosController = require('../controllers/utilsComentariosContr
  *                 example: 2
  *               totalCiudadanos:
  *                 type: integer
- *                 example: 2000
+ *                 example: 999998
  *     responses:
  *       200:
  *         description: Usuarios generados exitosamente
@@ -53,16 +53,30 @@ router.post('/generar-usuarios-lote', (req, res) => {
  *             properties:
  *               totalReportes:
  *                 type: integer
- *                 example: 2000
+ *                 example: 1000000
  *               offset:
  *                 type: integer
  *                 example: 0
+ *               fechaInicio:
+ *                 type: string
+ *                 example: "2023-01-01"
+ *               fechaFin:
+ *                 type: string
+ *                 example: "2023-12-31"
  *     responses:
  *       200:
  *         description: Reportes generados exitosamente
  */
-router.post('/generar-reportes-lote', utilsReportesController.generarReportesLote);
-
+router.post('/generar-reportes-lote', (req, res) => {
+  const { totalReportes = 1000000, offset = 0, fechaInicio = '', fechaFin = '' }  = req.body || {};
+  const cmd = `python seeders/seeder_reportes.py ${totalReportes} ${offset} "${fechaInicio} ${fechaFin}"`;
+  exec(cmd, (error, stdout, stderr) => {
+    if (error) {
+      return res.status(500).json({ message: 'Error al ejecutar el seeder de reportes', error: error.message, stderr });
+    }
+    res.json({ message: 'Seeder de reportes ejecutado correctamente', stdout });
+  });
+});
 /**
  * @swagger
  * /api/utils/generar-comentarios-lote:
