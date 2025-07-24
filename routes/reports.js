@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const reportsController = require("../controllers/reportsController");
 const authMiddleware = require("../middleware/auth");
+const isAdmin = require("../middleware/isAdmin");
 
 /**
  * @swagger
@@ -185,6 +186,48 @@ router.get(
   "/location/:lat/:lng/:radius",
   reportsController.getReportsByLocation
 );
+
+/**
+ * @swagger
+ * /api/reports/admin/status/{id}:
+ *   patch:
+ *     summary: Actualizar estado de reporte (Solo Admin)
+ *     tags: [Reportes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del reporte a actualizar
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               estado:
+ *                 type: string
+ *                 enum: [nuevo, en_proceso, resuelto, cerrado]
+ *                 example: en_proceso
+ *               asignado_a:
+ *                 type: integer
+ *                 example: 1
+ *                 description: ID del usuario asignado (opcional)
+ *     responses:
+ *       200:
+ *         description: Estado del reporte actualizado exitosamente
+ *       400:
+ *         description: Estado no válido
+ *       403:
+ *         description: Acceso denegado (No es admin)
+ *       404:
+ *         description: Reporte no encontrado
+ */
+router.patch("/admin/status/:id", authMiddleware, isAdmin, reportsController.updateReportStatusAdmin);
 
 /**
  * @swagger

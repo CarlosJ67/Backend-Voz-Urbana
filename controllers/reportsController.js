@@ -1,5 +1,6 @@
 const { Report, User } = require("../models");
 const Sequelize = require("sequelize");
+
 const reportsController = {
   async createReport(req, res) {
     try {
@@ -223,6 +224,54 @@ const reportsController = {
         });
     }
   },
+
+  async updateReportStatusAdmin(req, res) {
+    try {
+      const { id } = req.params;
+      const { estado, asignado_a } = req.body;
+
+      // Verificar que el usuario sea admin
+      if (req.user.rol !== 'admin') {
+        return res.status(403).json({ message: 'Acceso denegado. Solo los administradores pueden actualizar estados de reportes.' });
+      }
+
+      const report = await Report.findByPk(id);
+      if (!report) {
+        return res.status(404).json({ message: 'Reporte no encontrado' });
+      }
+
+      // Validar que el estado sea válido
+      const estadosValidos = ['nuevo', 'en_proceso', 'resuelto', 'cerrado'];
+      if (estado && !estadosValidos.includes(estado)) {
+        return res.status(400).json({ message: 'Estado no válido. Debe ser: nuevo, en_proceso, resuelto o cerrado' });
+      }
+
+      // Actualizar solo los campos permitidos para admin
+      if (estado !== undefined) {
+        report.estado = estado;
+      }
+      if (asignado_a !== undefined) {
+        report.asignado_a = asignado_a;
+      }
+
+      await report.save();
+
+      // Retornar el reporte actualizado con información del usuario
+      const updatedReport = await Report.findByPk(id, {
+        include: [{
+          model: User,
+          attributes: ['id', 'nombre', 'email']
+        }]
+      });
+
+      res.json({
+        message: 'Estado del reporte actualizado exitosamente',
+        report: updatedReport
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Error al actualizar estado del reporte', error: error.message });
+    }
+  }
 };
 
 module.exports = reportsController;
