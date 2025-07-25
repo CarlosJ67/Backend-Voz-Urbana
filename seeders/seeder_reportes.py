@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '1234',
+    'password': '12345',
     'database': 'voz_urbana',
-    'port': 3307
+    'port': 3306
 }
 
 estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado']

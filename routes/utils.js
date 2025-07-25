@@ -38,6 +38,7 @@ router.post('/generar-usuarios-lote', (req, res) => {
     res.json({ message: 'Seeder ejecutado correctamente', stdout });
   });
 });
+
 /**
  * @swagger
  * /api/utils/generar-reportes-lote:
@@ -77,6 +78,7 @@ router.post('/generar-reportes-lote', (req, res) => {
     res.json({ message: 'Seeder de reportes ejecutado correctamente', stdout });
   });
 });
+
 /**
  * @swagger
  * /api/utils/generar-comentarios-lote:
@@ -92,30 +94,51 @@ router.post('/generar-reportes-lote', (req, res) => {
  *             properties:
  *               totalComentarios:
  *                 type: integer
- *                 example: 2000
+ *                 description: Cantidad de comentarios a generar
+ *                 example: 1000000
  *               offset:
  *                 type: integer
+ *                 description: Offset para continuar desde un punto específico
  *                 example: 0
  *     responses:
  *       200:
  *         description: Comentarios generados exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Seeder de comentarios ejecutado correctamente"
+ *                 stdout:
+ *                   type: string
+ *                   example: "Comentarios generados con éxito"
+ *       500:
+ *         description: Error al ejecutar el seeder de comentarios
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Error al ejecutar el seeder de comentarios"
+ *                 error:
+ *                   type: string
+ *                   example: "Error en el script"
+ *                 stderr:
+ *                   type: string
+ *                   example: "Traceback error details"
  */
 router.post('/generar-comentarios-lote', (req, res) => {
-  let { totalComentarios, offset } = req.body || {};
+  const { totalComentarios = 1000000, offset = 0 } = req.body || {};
 
-  // Validaciones
-  totalComentarios = parseInt(totalComentarios);
-  offset = parseInt(offset);
+  // Validaciones más simples, igual que los otros seeders
+  const comentarios = parseInt(totalComentarios) || 1000000;
+  const offsetValue = parseInt(offset) || 0;
 
-  // Asignar valores por defecto si son inválidos
-  if (isNaN(totalComentarios) || totalComentarios <= 0) {
-    totalComentarios = 100;
-  }
-  if (isNaN(offset) || offset < 0) {
-    offset = 0;
-  }
-
-  const cmd = `python seeders/seeder_comentarios.py ${totalComentarios} ${offset}`;
+  const cmd = `python seeders/seeder_comentarios.py ${comentarios} ${offsetValue}`;
 
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
@@ -132,56 +155,5 @@ router.post('/generar-comentarios-lote', (req, res) => {
     });
   });
 });
-/**
- @swagger
- * /api/utils/generar-comentarios-lote:
- *   post:
- *     summary: Genera comentarios aleatorios por lote (solo para pruebas)
- *     tags: [Utils]
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               totalComentarios:
- *                 type: integer
- *                 description: Cantidad de comentarios a generar. Valor por defecto: 100.
- *                 example: 2000
- *               offset:
- *                 type: integer
- *                 description: Cantidad de usuarios a omitir desde el inicio. Valor por defecto: 0.
- *                 example: 0
- *     responses:
- *       200:
- *         description: Comentarios generados exitosamente
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Seeder de comentarios ejecutado correctamente
- *                 stdout:
- *                   type: string
- *                   example: Comentarios generados con éxito.
- *       500:
- *         description: Error al ejecutar el seeder de comentarios
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Error al ejecutar el seeder de comentarios
- *                 error:
- *                   type: string
- *                   example: Error: el script no pudo ejecutarse
- *                 stderr:
- *                   type: string
- *                   example: Traceback (most recent call last): ...
- */
+
 module.exports = router;
