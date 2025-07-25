@@ -70,7 +70,8 @@ router.post('/generar-usuarios-lote', (req, res) => {
  */
 router.post('/generar-reportes-lote', (req, res) => {
   const { totalReportes = 1000000, offset = 0, fechaInicio = '', fechaFin = '' }  = req.body || {};
-  const cmd = `python seeders/seeder_reportes.py ${totalReportes} ${offset} "${fechaInicio} ${fechaFin}"`;
+  const cmd = `python seeders/seeder_reportes.py ${totalReportes} ${offset} "${fechaInicio}" "${fechaFin}"`;
+
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       return res.status(500).json({ message: 'Error al ejecutar el seeder de reportes', error: error.message, stderr });
