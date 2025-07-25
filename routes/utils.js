@@ -70,7 +70,8 @@ router.post('/generar-usuarios-lote', (req, res) => {
  */
 router.post('/generar-reportes-lote', (req, res) => {
   const { totalReportes = 1000000, offset = 0, fechaInicio = '', fechaFin = '' }  = req.body || {};
-  const cmd = `python seeders/seeder_reportes.py ${totalReportes} ${offset} "${fechaInicio} ${fechaFin}"`;
+  const cmd = `python seeders/seeder_reportes.py ${totalReportes} ${offset} "${fechaInicio}" "${fechaFin}"`;
+
   exec(cmd, (error, stdout, stderr) => {
     if (error) {
       return res.status(500).json({ message: 'Error al ejecutar el seeder de reportes', error: error.message, stderr });
@@ -155,5 +156,73 @@ router.post('/generar-comentarios-lote', (req, res) => {
     });
   });
 });
+
+
+/**
+ * @swagger
+ * /api/utils/ejecutar-etl-reportes:
+ *   post:
+ *     summary: Ejecuta el proceso ETL para la tabla 'reportes'
+ *     tags: [Utils]
+ *     requestBody:
+ *       required: false
+ *     responses:
+ *       200:
+ *         description: ETL ejecutado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "ETL ejecutado correctamente"
+ *                 archivo:
+ *                   type: string
+ *                   example: "etl_reportes_limpios_20250725_172756.csv"
+ *                 stdout:
+ *                   type: string
+ *                   example: "Conectando y extrayendo datos de la tabla 'reportes'...\nProcesando los datos...\nETL completado. Archivo generado: etl_reportes_limpios_20250725_172756.csv"
+ *       500:
+ *         description: Error al ejecutar el proceso ETL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Error al ejecutar el ETL"
+ *                 error:
+ *                   type: string
+ *                   example: "Error en el script"
+ *                 stderr:
+ *                   type: string
+ *                   example: "Traceback error details"
+ */
+router.post('/ejecutar-etl-reportes', (req, res) => {
+  const cmd = `python seeders/etl_reportes.py`;
+
+  exec(cmd, (error, stdout, stderr) => {
+  if (error) {
+    return res.status(500).json({
+      message: 'Error al ejecutar el ETL',
+      error: error.message,
+      stderr
+    });
+  }
+
+  // Extraer nombre de archivo desde stdout
+  const match = stdout.match(/Archivo generado:\s*(.*\.csv)/);
+  const fileName = match ? match[1] : null;
+
+  res.json({
+    message: 'ETL ejecutado correctamente',
+    archivo: fileName,
+    stdout
+  });
+});
+});
+
 
 module.exports = router;

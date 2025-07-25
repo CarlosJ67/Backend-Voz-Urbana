@@ -8,56 +8,101 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '12345',
+    'password': '1234',
     'database': 'voz_urbana',
-    'port': 3306
+    'port': 3307
 }
 
 estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado']
 prioridades = ['baja', 'media', 'alta']
 
-titulosBase = [
-    # Problemas de agua
-    'Fuga de agua en tubería principal', 'Pérdida de agua en alcantarilla', 'Inundación en calle secundaria',
-    'Bomba de agua averiada', 'Contador de agua dañado', 'Presión de agua insuficiente',
-    'Agua turbia en suministro', 'Pozo de agua contaminado', 'Conexión ilegal de agua',
-    'Estanque de agua abandonado', 'Filtraciones en edificio público', 'Humedades por tubería rota',
-    
-    # Problemas viales
-    'Bache profundo en avenida', 'Hundimiento de pavimento', 'Señalización vial dañada',
-    'Semáforo no funciona', 'Líneas peatonales borradas', 'Puente peatonal deteriorado',
-    'Cuneta obstruida', 'Alcantarilla sin tapa', 'Poste de luz caído',
-    'Esquina peligrosa sin visibilidad', 'Carril de bicicletas obstruido', 'Paso de cebra deteriorado',
-    
-    # Basura y limpieza
-    'Basura acumulada por días', 'Contenedor desbordado', 'Desechos peligrosos abandonados',
-    'Vertedero ilegal', 'Recolección de basura atrasada', 'Olores por descomposición',
-    'Chatarra acumulada', 'Escombros de construcción', 'Material médico desechado',
-    'Contenedor de reciclaje lleno', 'Basura en área natural', 'Desechos electrónicos abandonados',
-    
-    # Áreas verdes
-    'Árbol caído bloqueando calle', 'Ramas peligrosas en árbol', 'Césped sin cortar',
-    'Plaga en jardín público', 'Árbol enfermo', 'Invasión de maleza',
-    'Daños en área de juegos', 'Bancas del parque rotas', 'Fuente pública sin mantenimiento',
-    'Animales abandonados en parque', 'Nido de avispas peligroso', 'Inundación en área verde',
-    
-    # Seguridad
-    'Alumbrado público apagado', 'Poste de luz intermitente', 'Cámara de seguridad dañada',
-    'Vandalismo en propiedad pública', 'Pintas graffiti en muro', 'Robo de infraestructura',
-    'Persona sospechosa merodeando', 'Actividad ilegal en calle', 'Ruido excesivo nocturno',
-    'Vehiculo abandonado', 'Fiestas que alteran orden', 'Comercio ilegal en via pública',
-    
-    # Transporte
-    'Parada de bus vandalizada', 'Taxi realizando maniobras peligrosas', 'Bus con fallas mecánicas',
-    'Horario de transporte no cumplido', 'Conductor imprudente', 'Accidente de tránsito',
-    'Pasajeros en riesgo', 'Infraestructura de transporte dañada', 'Estación de metro sucia',
-    'Aire acondicionado roto en bus', 'Asientos dañados en transporte', 'Cobro excesivo de pasaje',
-    
-    # Salud
-    'Foco de infección en zona pública', 'Animales callejeros agresivos', 'Acumulación de agua estancada',
-    'Restaurante con malas prácticas higiénicas', 'Hospital abandonado', 'Medicamentos vencidos',
-    'Falta de vacunación en área', 'Brote de enfermedad', 'Falta de servicios médicos',
-    'Contaminación por químicos', 'Residuos hospitalarios mal manejados', 'Falta de agua potable'
+titulosInfraestructura = [
+    'Bache profundo en avenida principal', 'Hundimiento de pavimento reciente', 'Banqueta colapsada por raíces',
+    'Puente peatonal deteriorado', 'Grietas en muros de contención', 'Construcción abandonada en vía pública',
+    'Alcantarilla sin tapa en cruce peatonal', 'Desnivel peligroso en calle', 'Esquina sin rampa para discapacitados',
+    'Pavimento levantado por raíces de árbol', 'Puente vehicular con fisuras visibles', 'Columna estructural con daño',
+    'Falta de señalética de obra en construcción', 'Material de construcción obstruyendo calle', 'Zanja abierta sin protección',
+    'Banquetas resbalosas sin textura', 'Rejilla de desagüe hundida', 'Poste de concreto dañado', 'Escaleras sin barandales',
+    'Muros de contención con filtraciones'
+]
+titulosServiciosPublicos = [
+    'Alumbrado público apagado en colonia', 'Poste de luz intermitente', 'Corte frecuente de energía eléctrica',
+    'Transformador con fugas de aceite', 'Cableado colgante sobre calle', 'Parada de autobús vandalizada',
+    'Medidor de luz expuesto', 'Toma de agua sin tapa', 'Tubería de gas expuesta', 'Fugas en sistema eléctrico público',
+    'Contador de electricidad sin protección', 'Cables eléctricos sobre zona peatonal', 'Lámpara pública colgando',
+    'Zona sin alumbrado desde hace semanas', 'Interruptores públicos dañados', 'Cajas eléctricas abiertas',
+    'Zona con variaciones de voltaje', 'Red de agua sin presión constante', 'Conexión ilegal de luz',
+    'Transformador haciendo ruidos extraños'
+]
+
+titulosSaneamiento = [
+    'Fuga de agua en tubería principal', 'Drenaje colapsado en avenida', 'Inundación por lluvia en colonia',
+    'Tubería rota en zona habitacional', 'Agua turbia en suministro', 'Alcantarilla obstruida con basura',
+    'Falta de tapas en registros de drenaje', 'Pozo séptico sin mantenimiento', 'Humedad por filtración subterránea',
+    'Malos olores por fuga de aguas negras', 'Charcos permanentes en calle', 'Agua estancada con larvas',
+    'Cárcamo sin funcionamiento', 'Tubería pluvial desconectada', 'Drenaje con retorno de agua sucia',
+    'Pozo de absorción colapsado', 'Fosas sépticas rebosadas', 'Sistema pluvial no funcional',
+    'Conexión cruzada agua-potable/aguas-negras', 'Humedad saliendo de registro de drenaje'
+]
+
+titulosLimpieza = [
+    'Basura acumulada en esquina', 'Contenedor de basura desbordado', 'Recolección de basura atrasada',
+    'Restos de poda sin recoger', 'Escombros de construcción abandonados', 'Chatarra acumulada en vía pública',
+    'Contenedor de reciclaje saturado', 'Basura en parque recreativo', 'Material médico abandonado',
+    'Desechos electrónicos en banqueta', 'Focos rotos en la vía pública', 'Cartón mojado bloqueando acera',
+    'Residuos sólidos flotando en canal', 'Tierra acumulada en banqueta', 'Basura doméstica expuesta a animales',
+    'Mobiliario roto abandonado en calle', 'Basura tras eventos masivos sin limpieza', 'Contenedor con residuos peligrosos',
+    'Montón de hojas secas sin recoger', 'Animales muertos no retirados de vía'
+]
+
+titulosSeguridad = [
+    'Cámara de vigilancia dañada', 'Zona sin patrullaje policial', 'Vandalismo en parque infantil',
+    'Robo de cableado público', 'Graffiti en edificio público', 'Personas sospechosas merodeando',
+    'Vehículo abandonado en esquina', 'Asaltos frecuentes en calle', 'Robo a casa habitación',
+    'Puerta forzada en escuela pública', 'Portón sin cerradura en lugar público', 'Robos constantes en zona escolar',
+    'Cristales rotos en edificio abandonado', 'Incendio provocado en basurero', 'Violencia en cancha deportiva',
+    'Grupo de personas intimidando en calle', 'Intento de saqueo a local', 'Zona oscura propensa a delitos',
+    'Daño intencional a mobiliario urbano', 'Venta de droga en espacio público'
+]
+
+titulosTransporte = [
+    'Semáforo descompuesto en cruce', 'Parada de autobús sin techo', 'Señal de tránsito caída',
+    'Líneas peatonales borradas', 'Carril de bicicleta obstruido', 'Bus con fallas mecánicas',
+    'Horario de transporte incumplido', 'Conductor imprudente en zona escolar', 'Trafico intenso por mal diseño vial',
+    'Accidente por señalización deficiente', 'Pasajeros viajando de pie en exceso', 'Rutas de bus mal planificadas',
+    'Tiempos de espera muy largos', 'Choferes con música muy alta', 'Transportes sin ventilación adecuada',
+    'Unidades de transporte muy sucias', 'Cobros de pasaje no autorizados', 'Conductor sin identificación visible',
+    'Transporte informal operando en ruta oficial', 'Paradero sin iluminación'
+]
+
+titulosMedioAmbiente = [
+    'Árbol caído tras tormenta', 'Ramas obstruyendo cables eléctricos', 'Inundación en área verde',
+    'Plaga en jardín público', 'Árbol enfermo sin atención', 'Nido de avispas en parque',
+    'Contaminación del aire por quema', 'Ruido excesivo por maquinaria', 'Maleza invadiendo banquetas',
+    'Residuos químicos vertidos en canal', 'Humo constante en zona residencial', 'Vertido de aceite en calle',
+    'Tala no autorizada de árboles', 'Falta de mantenimiento a jardineras', 'Contaminación visual por anuncios ilegales',
+    'Contaminación auditiva por altavoces', 'Basura flotante en río', 'Fuga de gases industriales',
+    'Fauna silvestre en peligro urbano', 'Quema de llantas en baldío'
+]
+
+titulosSaludPublica = [
+    'Foco de infección por basura', 'Animales callejeros agresivos', 'Acumulación de agua estancada',
+    'Restaurante con malas prácticas sanitarias', 'Medicamentos caducados en clínica', 'Falta de vacunación comunitaria',
+    'Hospital sin atención médica', 'Falta de agua potable en clínica', 'Residuos hospitalarios mal manejados',
+    'Brote de enfermedad en la zona', 'Mercado con condiciones insalubres', 'Clínica sin insumos básicos',
+    'Ambulancias sin mantenimiento', 'Refugio de animales con condiciones antihigiénicas', 'Venta ilegal de medicamentos',
+    'Zona sin acceso a servicios médicos', 'Contenedores con jeringas usadas', 'Baños públicos contaminados',
+    'Infecciones respiratorias por polución', 'Casos de dengue sin fumigación'
+]
+
+titulosOtros = [
+    'Comercio informal bloqueando banquetas', 'Fiestas con música excesiva', 'Obras sin permiso municipal',
+    'Publicidad invasiva en postes', 'Venta de pirotecnia ilegal', 'Personas viviendo en vía pública',
+    'Maltrato animal en espacio urbano', 'Falta de baños públicos', 'Solicitantes de apoyo en semáforos',
+    'Reclamos vecinales sin respuesta del gobierno', 'Fuga de mascotas en calle', 'Circos o ferias con instalaciones inseguras',
+    'Vecinos usando bocinas de alto volumen', 'Quema de basura en casa particular', 'Eventos masivos sin control',
+    'Obstrucción de accesos para discapacitados', 'Personas haciendo fogatas en parques', 'Autos estacionados sobre banquetas',
+    'Derrumbes menores en laderas', 'Falta de atención a denuncias previas'
 ]
 
 descripcionesBase = [
@@ -98,19 +143,6 @@ descripcionesBase = [
     'La temporada de lluvias podría empeorar significativamente la situación.'
 ]
 
-def getRandomTitulo(i, categoria_nombre='', offset=0):
-    base = random.choice(titulosBase)
-    variaciones = [
-        f"[Urgente] {base}",
-        f"{base} en estado crítico",
-        f"Nuevo reporte: {base}",
-        f"{base} (sin resolver)",
-        f"Reincidente: {base}",
-        f"{categoria_nombre + ' ' if categoria_nombre else ''}{base}",
-        f"{base} - necesita atención inmediata"
-    ]
-    variante = random.choice(variaciones)
-    return f"{variante} #{offset + i + 1}"
 
 def getRandomDescripcion(i, titulo=''):
     base = random.choice(descripcionesBase)
@@ -241,14 +273,27 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
         reportes = []
         for i in range(batch_start, min(batch_start + batch_size, total_reportes)):
             categoria_id = random.choice(list(categoriaMap.keys()))
-            categoria_nombre = categoriaMap[categoria_id]
+            # Diccionario que mapea IDs de categoría a los arrays de títulos
+            titulosPorCategoria = {
+                1: titulosInfraestructura,
+                2: titulosServiciosPublicos,
+                3: titulosSaneamiento,
+                4: titulosLimpieza,
+                5: titulosSeguridad,
+                6: titulosTransporte,
+                7: titulosMedioAmbiente,
+                8: titulosSaludPublica,
+                9: titulosOtros
+            }
+            titulosCategoria = titulosPorCategoria.get(categoria_id, [])
+            titulo_base = random.choice(titulosCategoria)
+            titulo = f"{titulo_base} #{offset + i + 1}"
             usuario_id = random.choice(usuarioIds)
-            titulo = getRandomTitulo(i, categoria_nombre, offset)
             descripcion = getRandomDescripcion(i, titulo)
             estado = random.choice(estados)
             prioridad = random.choice(prioridades)
-            latitud = getRandomFloat(19.20, 19.60)
-            longitud = getRandomFloat(-99.30, -99.00)
+            latitud = getRandomFloat(20.25, 20.28)
+            longitud = getRandomFloat(-97.95, -97.97)
             
             # Genera fecha de creación
             if use_custom_dates:
