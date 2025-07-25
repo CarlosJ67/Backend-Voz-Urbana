@@ -8,9 +8,9 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '12345',
+    'password': '1234',
     'database': 'voz_urbana',
-    'port': 3306
+    'port': 3307
 }
 
 nombres_hombres = [ 'Carlos', 'Juan', 'Pedro', 'Luis', 'Miguel', 'Jorge', 'Andrés', 'Fernando', 'Ricardo', 'Manuel',
