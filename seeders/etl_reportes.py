@@ -1,13 +1,16 @@
 import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
+import os 
 
 def ejecutar_etl():
     # Configuración de conexión MySQL
     db_user = 'root'
     db_password = '1234'
+    # db_password = '12345'
     db_host = 'localhost'
     db_port = 3307
+    # db_port = 3306
     db_name = 'voz_urbana'
 
     # Conexión
@@ -43,12 +46,18 @@ def ejecutar_etl():
     df = df.drop_duplicates(subset=['titulo', 'descripcion', 'latitud', 'longitud', 'fecha_creacion'])
 
     # 💾 CARGA: exportar como CSV
+    # Crear carpeta automatica si no existe
+    output_folder = "exports/etl_data"  # ← Carpeta específica para almacenar los archivos ETL
+    os.makedirs(output_folder, exist_ok=True)
+    
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_file = f"etl_reportes_limpios_{timestamp}.csv"
+    filename = f"etl_reportes_limpios_{timestamp}.csv"
+    output_file = os.path.join(output_folder, filename)
+    
     df.to_csv(output_file, index=False, encoding='utf-8')
 
-    print(f" ETL completado. Archivo generado: {output_file}")
-    return output_file  # 👈 útil si quieres capturar el path desde Node.js
+    print(f"✅ ETL completado. Archivo generado: {output_file}")
+    return output_file
 
 # 🔁 Ejecución directa
 if __name__ == "__main__":
