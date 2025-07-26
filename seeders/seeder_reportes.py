@@ -9,8 +9,10 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
     'password': '1234',
+    #password: '12345',
     'database': 'voz_urbana',
     'port': 3307
+    #'port': 3306
 }
 
 estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado']
@@ -169,9 +171,9 @@ def addRandomTime(date, minMinutes=0, maxMinutes=1440):
     nuevaFecha = date + timedelta(minutes=minutos, seconds=segundos, milliseconds=milisegundos)
     return nuevaFecha
 
-def getDateBasedOnStatus(status, fecha_inicio=None, fecha_fin=None):
+def getDateBasedOnStatus(status, fecha_inicio=None, fecha_fin=None, total_reportes=None, current_index=None):
     if fecha_inicio and fecha_fin:
-        return getRandomDateInRange(fecha_inicio, fecha_fin)
+        return getRandomDateInRange(fecha_inicio, fecha_fin, total_reportes, current_index)
 
     now = datetime.now()
     oneDay = timedelta(days=1)
@@ -199,8 +201,8 @@ def getDateBasedOnStatus(status, fecha_inicio=None, fecha_fin=None):
         return past
     return now
 
-def getRandomDateInRange(fecha_inicio, fecha_fin):
-    """Genera una fecha aleatoria entre fecha_inicio y fecha_fin"""
+def getRandomDateInRange(fecha_inicio, fecha_fin, total_reportes=None, current_index=None):
+    """Genera fechas secuenciales entre fecha_inicio y fecha_fin"""
     start = datetime.strptime(fecha_inicio, '%Y-%m-%d')
     end = datetime.strptime(fecha_fin, '%Y-%m-%d')
     
@@ -208,8 +210,24 @@ def getRandomDateInRange(fecha_inicio, fecha_fin):
         start, end = end, start
     
     delta = end - start
-    random_days = getRandomInt(0, delta.days)
-    return start + timedelta(days=random_days)
+    total_days = delta.days
+    
+    if total_days == 0:
+        return start
+    
+    # Si no se proporcionan parámetros secuenciales, usar comportamiento aleatorio
+    if total_reportes is None or current_index is None:
+        random_days = getRandomInt(0, delta.days)
+        return start + timedelta(days=random_days)
+    
+    # Generar fechas secuenciales
+    days_per_report = total_days / max(total_reportes - 1, 1)
+    days_to_add = int(current_index * days_per_report)
+    
+    if days_to_add > total_days:
+        days_to_add = total_days
+    
+    return start + timedelta(days=days_to_add)
 
 def getUpdateDateBasedOnStatus(creationDate, status):
     now = datetime.now()
@@ -297,7 +315,7 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             
             # Genera fecha de creación
             if use_custom_dates:
-                fecha_creacion_base = getDateBasedOnStatus(estado, fecha_inicio, fecha_fin)
+                fecha_creacion_base = getDateBasedOnStatus(estado, fecha_inicio, fecha_fin, total_reportes, i)
             else:
                 fecha_creacion_base = getDateBasedOnStatus(estado)
             
