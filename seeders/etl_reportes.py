@@ -56,7 +56,7 @@ def ejecutar_etl():
     
     df.to_csv(output_file, index=False, encoding='utf-8')
 
-    print(f"✅ ETL completado. Archivo generado: {output_file}")
+    print(f"ETL completado. Archivo generado: {output_file}")
     return output_file
 
 # 🔁 Ejecución directa
