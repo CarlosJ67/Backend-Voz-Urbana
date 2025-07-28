@@ -291,8 +291,9 @@ router.post('/ejecutar-etl-reportes', (req, res) => {
     }
 
     console.log('[MODELO] Iniciando modelo con archivo:', csvPath);
-    const modelCmd = `python seeders/aprendizaje_no_supervisado.py "${csvPath}" --eps 0.01 --min_samples 5`;
 
+    //const modelCmd = `python seeders/aprendizaje_no_supervisado.py "${csvPath}" --eps 0.01 --min_samples 5`;
+    const modelCmd = `python seeders/aprendizaje_no_supervisado.py "${csvPath}" --quiet`;
     exec(modelCmd, (modelErr, modelStdout, modelStderr) => {
       if (modelErr) {
         console.error('[MODELO] Error durante ejecución:', {

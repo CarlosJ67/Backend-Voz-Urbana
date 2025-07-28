@@ -6,11 +6,11 @@ import os
 def ejecutar_etl():
     # Configuración de conexión MySQL
     db_user = 'root'
-    db_password = '1234'
-    # db_password = '12345'
+    #db_password = '1234'
+    db_password = '12345'
     db_host = 'localhost'
-    db_port = 3307
-    # db_port = 3306
+    #db_port = 3307
+    db_port = 3306
     db_name = 'voz_urbana'
 
     # Conexión

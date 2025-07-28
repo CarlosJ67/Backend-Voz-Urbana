@@ -2,17 +2,18 @@ import mysql.connector
 import random
 import time
 import sys
+import math
 from datetime import datetime, timedelta
 
 # Configuración de la base de datos
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '1234',
-    #'password': '12345',
+    #'password': '1234',
+    'password': '12345',
     'database': 'voz_urbana',
-    'port': 3307
-    #'port': 3306
+    #'port': 3307
+    'port': 3306
 }
 
 estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado']
@@ -118,10 +119,68 @@ PUNTOS_REFERENCIA = {
 }
 
 def generar_coordenadas_realistas():
-    """Genera coordenadas dentro del rango especificado manteniendo realismo"""
-    latitud = getRandomFloat(20.25, 20.28)
-    longitud = getRandomFloat(-97.95, -97.97)
-    return latitud, longitud
+    """Genera coordenadas con ligera tendencia a agruparse cerca de puntos de referencia"""
+    # 70% de las veces, generar cerca de un punto de referencia
+    if random.random() < 0.7:
+        punto_ref = random.choice(list(PUNTOS_REFERENCIA.values()))
+        # Generar en un radio pequeño alrededor del punto
+        radio = random.uniform(0.002, 0.008)  # Radio variable
+        angulo = random.uniform(0, 2 * math.pi)
+        
+        latitud = punto_ref[0] + radio * math.cos(angulo)
+        longitud = punto_ref[1] + radio * math.sin(angulo)
+        
+        # Asegurar que está dentro de los límites
+        latitud = max(20.25, min(20.28, latitud))
+        longitud = max(-97.97, min(-97.95, longitud))
+        
+        return latitud, longitud
+    else:
+        # 30% completamente aleatorio
+        latitud = getRandomFloat(20.25, 20.28)
+        longitud = getRandomFloat(-97.95, -97.97)
+        return latitud, longitud
+    
+def generar_prioridad_contextual(categoria_id, latitud, longitud):
+    """Genera prioridades más realistas basadas en ubicación y categoría"""
+    # Verificar si está cerca del centro (Zócalo)
+    centro = PUNTOS_REFERENCIA["Zócalo"]
+    distancia_centro = math.sqrt((latitud - centro[0])**2 + (longitud - centro[1])**2)
+    
+    # Categorías que tienden a ser más críticas
+    categorias_criticas = [1, 3, 5, 6]  # Infraestructura, Saneamiento, Seguridad, Transporte
+    
+    # Ajustar probabilidades según contexto
+    if distancia_centro < 0.005:  # Muy cerca del centro
+        if categoria_id in categorias_criticas:
+            pesos = [0.1, 0.25, 0.65]  # Más alta prioridad en centro
+        else:
+            pesos = [0.2, 0.35, 0.45]
+    elif distancia_centro < 0.01:  # Zona urbana media
+        if categoria_id in categorias_criticas:
+            pesos = [0.15, 0.3, 0.55]
+        else:
+            pesos = [0.25, 0.4, 0.35]
+    else:  # Zona periférica
+        if categoria_id in categorias_criticas:
+            pesos = [0.25, 0.4, 0.35]
+        else:
+            pesos = [0.45, 0.35, 0.2]  # Menos crítico en periferia
+    
+    return random.choices(['baja', 'media', 'alta'], weights=pesos)[0]
+
+def generar_estado_inteligente(prioridad):
+    """Genera estados más realistas según la prioridad"""
+    if prioridad == 'alta':
+        # Reportes críticos tienden a procesarse más
+        pesos = [0.3, 0.4, 0.2, 0.1]  # nuevo, en_proceso, resuelto, cerrado
+    elif prioridad == 'media':
+        pesos = [0.25, 0.35, 0.25, 0.15]
+    else:  # baja
+        # Reportes de baja prioridad pueden quedarse sin atender más tiempo
+        pesos = [0.4, 0.25, 0.25, 0.1]
+    
+    return random.choices(estados, weights=pesos)[0]   
 
 def generar_ubicacion_realista():
     """Genera direcciones válidas con máxima variación y lógica realista"""
@@ -432,11 +491,32 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
     if use_custom_dates:
         print(f"Generando reportes entre {fecha_inicio} y {fecha_fin}")
 
+    # Estadísticas para monitoreo
+    stats = {'alta': 0, 'media': 0, 'baja': 0, 'cerca_centro': 0}
+
     batch_size = 5000
     for batch_start in range(0, total_reportes, batch_size):
         reportes = []
         for i in range(batch_start, min(batch_start + batch_size, total_reportes)):
             categoria_id = random.choice(list(categoriaMap.keys()))
+
+            # Genera coordenadas realistas
+            # Mantiene un rango realista para Xicotepec de Juárez, Puebla
+            latitud, longitud = generar_coordenadas_realistas()
+            ubicacion = generar_ubicacion_realista()
+
+            # Generar prioridad inteligente basada en contexto
+            prioridad = generar_prioridad_contextual(categoria_id, latitud, longitud)
+            
+            # Generar estado basado en prioridad
+            estado = generar_estado_inteligente(prioridad)
+
+            # Actualizar estadísticas
+            stats[prioridad] += 1
+            centro = PUNTOS_REFERENCIA["Zócalo"]
+            if math.sqrt((latitud - centro[0])**2 + (longitud - centro[1])**2) < 0.01:
+                stats['cerca_centro'] += 1
+            
             # Diccionario que mapea IDs de categoría a los arrays de títulos
             titulosPorCategoria = {
                 1: titulosInfraestructura,
@@ -454,13 +534,9 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             titulo = f"{titulo_base} #{offset + i + 1}"
             usuario_id = random.choice(usuarioIds)
             descripcion = getRandomDescripcion(i, titulo)
-            estado = random.choice(estados)
-            prioridad = random.choice(prioridades)
 
-            # Genera coordenadas realistas
-            # Mantiene un rango realista para Xicotepec de Juárez, Puebla
-            latitud, longitud = generar_coordenadas_realistas()
-            ubicacion = generar_ubicacion_realista()
+            #estado = random.choice(estados)
+            #prioridad = random.choice(prioridades)
             
             # Genera fecha de creación
             if use_custom_dates:
@@ -503,9 +579,15 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
                 else:
                     raise  # Re-lanzar la excepción si no es deadlock o se agotaron los reintentos
 
+    # Mostrar estadísticas finales
+    print(f"\n=== ESTADÍSTICAS FINALES ===")
+    print(f"Reportes por prioridad: Alta={stats['alta']} ({(stats['alta']/total_reportes)*100:.1f}%), Media={stats['media']} ({(stats['media']/total_reportes)*100:.1f}%), Baja={stats['baja']} ({(stats['baja']/total_reportes)*100:.1f}%)")
+    print(f"Reportes cerca del centro: {stats['cerca_centro']} ({(stats['cerca_centro']/total_reportes)*100:.1f}%)")
+    print(f"El modelo debería detectar zonas críticas automáticamente basándose en esta distribución")
+
     cursor.close()
     conn.close()
-    print("¡Reportes generados exitosamente!")
+    print("¡Reportes generados exitosamente con patrones optimizados para ML!")
 
 if __name__ == "__main__":
     total_reportes = int(sys.argv[1]) if len(sys.argv) > 1 else 1000000
