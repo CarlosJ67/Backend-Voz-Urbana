@@ -16,7 +16,8 @@ DB_CONFIG = {
     'port': 3306
 }
 
-estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado']
+# ✅ ACTUALIZADO: Agregado el nuevo estado 'no_aprobado'
+estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado']
 prioridades = ['baja', 'media', 'alta']
 
 # =================================================================
@@ -102,7 +103,7 @@ CALLES_XICOTEPEC = [
     "Residencial", "Campestre", "Los Arcos", "Portal", "Plaza"
 ]
 
-# Puntos de referencia reales con coordenadas exactas - Fuente: Google Maps 2024
+# 🎯 MEJORA: Más puntos críticos para generar más zonas críticas
 PUNTOS_REFERENCIA = {
     "Zócalo": (20.275, -97.955),
     "Parque Juárez": (20.274, -97.958),
@@ -115,72 +116,116 @@ PUNTOS_REFERENCIA = {
     "Iglesia Principal": (20.2748, -97.9558),
     "Escuela Primaria": (20.276, -97.957),
     "Cementerio Municipal": (20.273, -97.949),
-    "Estadio Municipal": (20.279, -97.951)
+    "Estadio Municipal": (20.279, -97.951),
+    
+    # 🎯 NUEVOS PUNTOS CRÍTICOS para más zonas
+    "Plaza Comercial": (20.271, -97.954),
+    "Centro Deportivo": (20.277, -97.961),
+    "Gasolinera Principal": (20.274, -97.952),
+    "Puente Principal": (20.276, -97.959),
+    "Zona Industrial": (20.272, -97.948),
+    "Fraccionamiento Nuevo": (20.269, -97.957),
+    "Clínica IMSS": (20.278, -97.956),
+    "Preparatoria": (20.273, -97.963)
 }
 
 def generar_coordenadas_realistas():
-    """Genera coordenadas con ligera tendencia a agruparse cerca de puntos de referencia"""
-    # 70% de las veces, generar cerca de un punto de referencia
-    if random.random() < 0.7:
+    """🎯 MEJORA: Genera coordenadas con mayor concentración para crear zonas críticas más definidas"""
+    
+    # 🎯 MEJORA: Aumentar probabilidad de agrupación de 70% a 85%
+    if random.random() < 0.85:  # Era 0.7
         punto_ref = random.choice(list(PUNTOS_REFERENCIA.values()))
-        # Generar en un radio pequeño alrededor del punto
-        radio = random.uniform(0.002, 0.008)  # Radio variable
+        
+        # 🎯 MEJORA: Crear super-clusters más densos
+        # 40% muy cerca (zonas críticas densas), 60% normales
+        if random.random() < 0.4:
+            radio = random.uniform(0.001, 0.003)  # MUY concentrado
+        else:
+            radio = random.uniform(0.002, 0.006)  # Concentrado normal
+            
         angulo = random.uniform(0, 2 * math.pi)
         
         latitud = punto_ref[0] + radio * math.cos(angulo)
         longitud = punto_ref[1] + radio * math.sin(angulo)
         
-        # Asegurar que está dentro de los límites
+        # Asegurar límites
         latitud = max(20.25, min(20.28, latitud))
         longitud = max(-97.97, min(-97.95, longitud))
         
         return latitud, longitud
     else:
-        # 30% completamente aleatorio
+        # Solo 15% completamente aleatorio
         latitud = getRandomFloat(20.25, 20.28)
         longitud = getRandomFloat(-97.95, -97.97)
         return latitud, longitud
     
 def generar_prioridad_contextual(categoria_id, latitud, longitud):
-    """Genera prioridades más realistas basadas en ubicación y categoría"""
-    # Verificar si está cerca del centro (Zócalo)
-    centro = PUNTOS_REFERENCIA["Zócalo"]
-    distancia_centro = math.sqrt((latitud - centro[0])**2 + (longitud - centro[1])**2)
+    """🎯 MEJORA: Genera prioridades con mayor concentración de 'alta' en zonas específicas"""
     
-    # Categorías que tienden a ser más críticas
-    categorias_criticas = [1, 3, 5, 6]  # Infraestructura, Saneamiento, Seguridad, Transporte
+    # Verificar cercanía a múltiples puntos críticos
+    puntos_criticos = ["Zócalo", "Hospital Regional", "Mercado Municipal", "Terminal de Autobuses", 
+                      "Plaza Comercial", "Centro Deportivo", "Clínica IMSS"]
+    distancias_criticas = []
     
-    # Ajustar probabilidades según contexto
-    if distancia_centro < 0.005:  # Muy cerca del centro
-        if categoria_id in categorias_criticas:
-            pesos = [0.1, 0.25, 0.65]  # Más alta prioridad en centro
+    for punto_nombre in puntos_criticos:
+        if punto_nombre in PUNTOS_REFERENCIA:
+            punto = PUNTOS_REFERENCIA[punto_nombre]
+            distancia = math.sqrt((latitud - punto[0])**2 + (longitud - punto[1])**2)
+            distancias_criticas.append(distancia)
+    
+    # Encontrar la distancia mínima a cualquier punto crítico
+    min_distancia = min(distancias_criticas) if distancias_criticas else 0.02
+    
+    # 🎯 MEJORA: Categorías críticas más específicas por zona
+    categorias_ultra_criticas = [1, 3, 5]  # Infraestructura, Saneamiento, Seguridad
+    categorias_criticas = [6, 8]           # Transporte, Salud Pública
+    categorias_moderadas = [2, 4, 7, 9]    # Resto
+    
+    # 🎯 MEJORA: Lógica más agresiva para generar zonas críticas
+    if min_distancia < 0.003:  # MUY cerca de puntos críticos
+        if categoria_id in categorias_ultra_criticas:
+            pesos = [0.05, 0.15, 0.80]  # 80% alta prioridad!
+        elif categoria_id in categorias_criticas:
+            pesos = [0.10, 0.25, 0.65]  # 65% alta prioridad
         else:
-            pesos = [0.2, 0.35, 0.45]
-    elif distancia_centro < 0.01:  # Zona urbana media
-        if categoria_id in categorias_criticas:
-            pesos = [0.15, 0.3, 0.55]
+            pesos = [0.15, 0.35, 0.50]  # 50% alta prioridad
+            
+    elif min_distancia < 0.006:  # Cerca de puntos críticos
+        if categoria_id in categorias_ultra_criticas:
+            pesos = [0.10, 0.25, 0.65]  # 65% alta prioridad
+        elif categoria_id in categorias_criticas:
+            pesos = [0.15, 0.30, 0.55]  # 55% alta prioridad
         else:
-            pesos = [0.25, 0.4, 0.35]
+            pesos = [0.20, 0.40, 0.40]  # 40% alta prioridad
+            
+    elif min_distancia < 0.01:  # Zona urbana media
+        if categoria_id in categorias_ultra_criticas:
+            pesos = [0.20, 0.35, 0.45]  # 45% alta prioridad
+        elif categoria_id in categorias_criticas:
+            pesos = [0.25, 0.40, 0.35]  # 35% alta prioridad
+        else:
+            pesos = [0.30, 0.45, 0.25]  # 25% alta prioridad
+            
     else:  # Zona periférica
-        if categoria_id in categorias_criticas:
-            pesos = [0.25, 0.4, 0.35]
+        if categoria_id in categorias_ultra_criticas:
+            pesos = [0.30, 0.40, 0.30]  # 30% alta prioridad
         else:
-            pesos = [0.45, 0.35, 0.2]  # Menos crítico en periferia
+            pesos = [0.50, 0.35, 0.15]  # 15% alta prioridad
     
     return random.choices(['baja', 'media', 'alta'], weights=pesos)[0]
 
 def generar_estado_inteligente(prioridad):
-    """Genera estados más realistas según la prioridad"""
+    """✅ ACTUALIZADO: Genera estados más realistas según la prioridad + nuevo estado 'no_aprobado'"""
     if prioridad == 'alta':
-        # Reportes críticos tienden a procesarse más
-        pesos = [0.3, 0.4, 0.2, 0.1]  # nuevo, en_proceso, resuelto, cerrado
+        # Reportes críticos tienden a procesarse más, pero algunos pueden ser rechazados
+        pesos = [0.25, 0.4, 0.2, 0.1, 0.05]  # nuevo, en_proceso, resuelto, cerrado, no_aprobado
     elif prioridad == 'media':
-        pesos = [0.25, 0.35, 0.25, 0.15]
+        pesos = [0.20, 0.35, 0.25, 0.15, 0.05]  # nuevo, en_proceso, resuelto, cerrado, no_aprobado
     else:  # baja
-        # Reportes de baja prioridad pueden quedarse sin atender más tiempo
-        pesos = [0.4, 0.25, 0.25, 0.1]
+        # Reportes de baja prioridad pueden quedarse sin atender más tiempo o ser rechazados más frecuentemente
+        pesos = [0.35, 0.25, 0.20, 0.10, 0.10]  # nuevo, en_proceso, resuelto, cerrado, no_aprobado
     
-    return random.choices(estados, weights=pesos)[0]   
+    return random.choices(estados, weights=pesos)[0]
 
 def generar_ubicacion_realista():
     """Genera direcciones válidas con máxima variación y lógica realista"""
@@ -222,6 +267,8 @@ def generar_ubicacion_realista():
         codigo_postal = ", C.P. 73080"
     
     return f"{tipo_via} {nombre_via} #{numero}, Col. {colonia}{referencia}{codigo_postal}"
+
+# ... resto de los títulos y descripciones se mantienen iguales ...
 
 titulosInfraestructura = [
     'Bache profundo en avenida principal', 'Hundimiento de pavimento reciente', 'Banqueta colapsada por raíces',
@@ -350,7 +397,6 @@ descripcionesBase = [
     'La temporada de lluvias podría empeorar significativamente la situación.'
 ]
 
-
 def getRandomDescripcion(i, titulo=''):
     base = random.choice(descripcionesBase)
     segunda = random.choice([d for d in descripcionesBase if d != base])
@@ -404,6 +450,10 @@ def getDateBasedOnStatus(status, fecha_inicio=None, fecha_fin=None, total_report
         except ValueError:
             past = past.replace(year=year, month=month, day=28)
         return past
+    elif status == 'no_aprobado':
+        # ✅ NUEVO: Reportes no aprobados pueden ser de cualquier momento reciente
+        daysAgoRejected = getRandomInt(1, 30)
+        return now - oneDay * daysAgoRejected
     return now
 
 def getRandomDateInRange(fecha_inicio, fecha_fin, total_reportes=None, current_index=None):
@@ -468,6 +518,10 @@ def getUpdateDateBasedOnStatus(creationDate, status):
         except ValueError:
             closedDate = closedDate.replace(year=year, month=month, day=28)
         return closedDate if closedDate <= now else now
+    elif status == 'no_aprobado':
+        # ✅ NUEVO: Reportes rechazados se actualizan rápidamente (1-5 días después de creación)
+        rejectedDays = getRandomInt(1, 5)
+        return creationDate + oneDay * rejectedDays
     else:
         return creationDate
 
@@ -491,8 +545,14 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
     if use_custom_dates:
         print(f"Generando reportes entre {fecha_inicio} y {fecha_fin}")
 
-    # Estadísticas para monitoreo
-    stats = {'alta': 0, 'media': 0, 'baja': 0, 'cerca_centro': 0}
+    # MEJORA: Estadísticas mejoradas para monitoreo
+    stats = {
+        'alta': 0, 'media': 0, 'baja': 0, 'cerca_centro': 0,
+        'super_clusters': 0,  # Reportes en zonas muy densas
+        'por_categoria': {},  # Estadísticas por categoría
+        'zonas_potenciales': 0,  # Reportes que formarán zonas críticas
+        'por_estado': {'nuevo': 0, 'en_proceso': 0, 'resuelto': 0, 'cerrado': 0, 'no_aprobado': 0}
+    }
 
     batch_size = 5000
     for batch_start in range(0, total_reportes, batch_size):
@@ -500,22 +560,35 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
         for i in range(batch_start, min(batch_start + batch_size, total_reportes)):
             categoria_id = random.choice(list(categoriaMap.keys()))
 
-            # Genera coordenadas realistas
-            # Mantiene un rango realista para Xicotepec de Juárez, Puebla
+            # Genera coordenadas realistas con mejoras
             latitud, longitud = generar_coordenadas_realistas()
             ubicacion = generar_ubicacion_realista()
 
-            # Generar prioridad inteligente basada en contexto
+            # Generar prioridad inteligente basada en contexto mejorado
             prioridad = generar_prioridad_contextual(categoria_id, latitud, longitud)
             
-            # Generar estado basado en prioridad
+            # Generar estado basado en prioridad (incluyendo no_aprobado)
             estado = generar_estado_inteligente(prioridad)
 
-            # Actualizar estadísticas
+            # MEJORA: Actualizar estadísticas mejoradas
             stats[prioridad] += 1
+            stats['por_estado'][estado] += 1
+            
+            # Verificar si está en zona de super-cluster
+            for punto_nombre, punto_coords in PUNTOS_REFERENCIA.items():
+                distancia_punto = math.sqrt((latitud - punto_coords[0])**2 + (longitud - punto_coords[1])**2)
+                if distancia_punto < 0.003 and prioridad == 'alta':
+                    stats['super_clusters'] += 1
+                    break
+            
             centro = PUNTOS_REFERENCIA["Zócalo"]
             if math.sqrt((latitud - centro[0])**2 + (longitud - centro[1])**2) < 0.01:
                 stats['cerca_centro'] += 1
+                
+            # Actualizar estadísticas por categoría
+            if categoria_id not in stats['por_categoria']:
+                stats['por_categoria'][categoria_id] = {'alta': 0, 'media': 0, 'baja': 0}
+            stats['por_categoria'][categoria_id][prioridad] += 1
             
             # Diccionario que mapea IDs de categoría a los arrays de títulos
             titulosPorCategoria = {
@@ -534,9 +607,6 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             titulo = f"{titulo_base} #{offset + i + 1}"
             usuario_id = random.choice(usuarioIds)
             descripcion = getRandomDescripcion(i, titulo)
-
-            #estado = random.choice(estados)
-            #prioridad = random.choice(prioridades)
             
             # Genera fecha de creación
             if use_custom_dates:
@@ -553,7 +623,6 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             if fecha_actualizacion <= fecha_creacion:
                 fecha_actualizacion = fecha_creacion + timedelta(minutes=getRandomInt(1, 1440))
             
-            #ubicacion = f"Colonia {getRandomInt(1, 50)}, Calle {getRandomInt(1, 100)}"
             reportes.append((
                 titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad,
                 None, usuario_id, None, fecha_creacion.strftime('%Y-%m-%d %H:%M:%S'),
@@ -579,11 +648,24 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
                 else:
                     raise  # Re-lanzar la excepción si no es deadlock o se agotaron los reintentos
 
-    # Mostrar estadísticas finales
-    print(f"\n=== ESTADÍSTICAS FINALES ===")
+    # MEJORA: Mostrar estadísticas más detalladas
+    print(f"\n=== ESTADÍSTICAS OPTIMIZADAS PARA ML ===")
     print(f"Reportes por prioridad: Alta={stats['alta']} ({(stats['alta']/total_reportes)*100:.1f}%), Media={stats['media']} ({(stats['media']/total_reportes)*100:.1f}%), Baja={stats['baja']} ({(stats['baja']/total_reportes)*100:.1f}%)")
+    print(f"Super-clusters (zonas muy densas): {stats['super_clusters']} ({(stats['super_clusters']/total_reportes)*100:.1f}%)")
     print(f"Reportes cerca del centro: {stats['cerca_centro']} ({(stats['cerca_centro']/total_reportes)*100:.1f}%)")
-    print(f"El modelo debería detectar zonas críticas automáticamente basándose en esta distribución")
+    
+    # NUEVA: Estadísticas por estado incluyendo no_aprobado
+    print(f"\nReportes por estado:")
+    for estado, cantidad in stats['por_estado'].items():
+        print(f"  {estado}: {cantidad} ({(cantidad/total_reportes)*100:.1f}%)")
+    
+    # Mostrar categorías más críticas
+    categorias_criticas = {k: v['alta'] for k, v in stats['por_categoria'].items()}
+    top_categorias = sorted(categorias_criticas.items(), key=lambda x: x[1], reverse=True)[:3]
+    print(f"\nTop 3 categorías con más reportes de alta prioridad: {top_categorias}")
+    
+    print(f"\nEXPECTATIVA: Con estas mejoras, el modelo debería detectar entre 8-12 zonas críticas bien definidas")
+    print(f"Puntos críticos definidos: {len(PUNTOS_REFERENCIA)} ubicaciones estratégicas")
 
     cursor.close()
     conn.close()
