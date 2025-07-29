@@ -38,7 +38,7 @@ const Report = sequelize.define('Report', {
   },
   estado: 
   { 
-    type: DataTypes.ENUM('nuevo', 'en_proceso', 'resuelto', 'cerrado'), 
+    type: DataTypes.ENUM('nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado'), 
     defaultValue: 'nuevo' 
   },
   prioridad: { type: DataTypes.ENUM('baja', 'media', 'alta'), defaultValue: 'media' },
