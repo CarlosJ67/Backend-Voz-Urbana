@@ -1,6 +1,6 @@
 const { Report, User, Categoria } = require('../models');
 
-const estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado'];
+const estados = ['nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado'];
 const prioridades = ['baja', 'media', 'alta'];
 
 // Ampliación masiva de títulos base (300+)
@@ -193,6 +193,11 @@ function getDateBasedOnStatus(status) {
       const past = new Date();
       past.setMonth(now.getMonth() - monthsAgoClosed);
       return past;
+
+    case 'no_aprobado':
+      // Reportes no aprobados: últimos 7-30 días
+      const daysAgoNotApproved = getRandomInt(7, 30);
+      return new Date(now.getTime() - (daysAgoNotApproved * oneDay));
       
     default:
       return new Date();
@@ -226,11 +231,57 @@ function getUpdateDateBasedOnStatus(creationDate, status) {
       const closedDate = new Date(creationDate);
       closedDate.setMonth(creationDate.getMonth() + closedMonths);
       return closedDate > now ? now : closedDate;
+
+    case 'no_aprobado':
+      // No aprobado entre 1-7 días después de creación
+      const notApprovedDays = getRandomInt(1, 7);
+      return new Date(creationDate.getTime() + notApprovedDays * oneDay);
       
     default:
       return creationDate;
   }
 }
+
+// Controlador para actualizar el estado de un reporte (solo admin)
+exports.updateStatusAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+
+    // Validar que el estado sea válido
+    if (!estados.includes(estado)) {
+      return res.status(400).json({ 
+        message: 'Estado inválido', 
+        estadosValidos: estados 
+      });
+    }
+
+    // Buscar el reporte
+    const reporte = await Report.findByPk(id);
+    if (!reporte) {
+      return res.status(404).json({ message: 'Reporte no encontrado' });
+    }
+
+    // Actualizar el estado
+    await reporte.update({ estado });
+
+    res.json({ 
+      message: 'Estado actualizado correctamente',
+      reporte: {
+        id: reporte.id,
+        titulo: reporte.titulo,
+        estado: reporte.estado,
+        fecha_actualizacion: reporte.fecha_actualizacion
+      }
+    });
+  } catch (error) {
+    console.error('Error al actualizar estado:', error);
+    res.status(500).json({ 
+      message: 'Error al actualizar el estado del reporte', 
+      error: error.message 
+    });
+  }
+};
 
 exports.generarReportesLote = async (req, res) => {
   try {
