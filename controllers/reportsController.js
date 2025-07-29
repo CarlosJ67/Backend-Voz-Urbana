@@ -44,7 +44,29 @@ const reportsController = {
 
   async getAllReports(req, res) {
     try {
+      // Construir filtros dinámicos basados en query parameters
+      const whereCondition = {};
+      
+      // Filtrar por estado si se proporciona
+      if (req.query.estado) {
+        const estadosValidos = ['nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado'];
+        if (estadosValidos.includes(req.query.estado)) {
+          whereCondition.estado = req.query.estado;
+        }
+      }
+
+      // Filtrar por categoria_id si se proporciona
+      if (req.query.categoria_id) {
+        whereCondition.categoria_id = req.query.categoria_id;
+      }
+
+      // Filtrar por usuario_id si se proporciona
+      if (req.query.usuario_id) {
+        whereCondition.usuario_id = req.query.usuario_id;
+      }
+
       const reports = await Report.findAll({
+        where: whereCondition,
         include: [
           {
             model: User,
@@ -241,9 +263,9 @@ const reportsController = {
       }
 
       // Validar que el estado sea válido
-      const estadosValidos = ['nuevo', 'en_proceso', 'resuelto', 'cerrado'];
+      const estadosValidos = ['nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado'];
       if (estado && !estadosValidos.includes(estado)) {
-        return res.status(400).json({ message: 'Estado no válido. Debe ser: nuevo, en_proceso, resuelto o cerrado' });
+        return res.status(400).json({ message: 'Estado no válido. Debe ser: nuevo, en_proceso, resuelto, cerrado o no_aprobado' });
       }
 
       // Actualizar solo los campos permitidos para admin
