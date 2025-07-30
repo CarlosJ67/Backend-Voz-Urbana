@@ -4,9 +4,12 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
 from sklearn.neighbors import NearestNeighbors
+from sklearn.ensemble import RandomForestRegressor  # ✅ AGREGADO
+from sklearn.model_selection import train_test_split  # ✅ AGREGADO
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error  # ✅ AGREGADO
 import matplotlib.pyplot as plt
 import joblib
-from datetime import datetime
+from datetime import datetime, timedelta  # ✅ AGREGADO timedelta
 import seaborn as sns
 import os
 import json
@@ -97,6 +100,239 @@ def generar_visualizacion_completa(df_resultados, analisis_zonas, n_clusters, gr
     plt.savefig(grafico_path, dpi=300, bbox_inches='tight', facecolor='white')
     plt.close()
 
+# ✅ MOVER ESTAS FUNCIONES ANTES DE LA FUNCIÓN PRINCIPAL
+def generar_recomendaciones_inteligentes(predicciones_futuras, analisis_zonas):
+    """Sistema de recomendaciones basado en predicciones"""
+    recomendaciones = []
+    
+    for zona_key, predicciones in predicciones_futuras.items():
+        zona_id = int(zona_key.split('_')[1])
+        zona_info = analisis_zonas.loc[zona_id]
+        
+        # Calcular tendencia
+        reportes_predichos = [p['reportes_predichos'] for p in predicciones]
+        tendencia = np.mean(np.diff(reportes_predichos)) if len(reportes_predichos) > 1 else 0
+        max_reportes = max(reportes_predichos)
+        
+        # Generar recomendaciones específicas
+        if max_reportes > zona_info['densidad'] * 1.5:  # Aumento significativo esperado
+            recomendaciones.append({
+                'zona': f'Zona {zona_id}',
+                'accion': f'Reforzar atención preventiva - Se esperan {max_reportes} reportes',
+                'prioridad': 'ALTA',
+                'tipo': 'preventivo',
+                'coordenadas': f"({zona_info['lat_centro']:.4f}, {zona_info['lng_centro']:.4f})"
+            })
+        elif tendencia > 0:  # Tendencia creciente
+            recomendaciones.append({
+                'zona': f'Zona {zona_id}',
+                'accion': f'Monitoreo intensificado - Tendencia creciente detectada',
+                'prioridad': 'MEDIA',
+                'tipo': 'monitoreo',
+                'coordenadas': f"({zona_info['lat_centro']:.4f}, {zona_info['lng_centro']:.4f})"
+            })
+        elif max_reportes < zona_info['densidad'] * 0.5:  # Mejora esperada
+            recomendaciones.append({
+                'zona': f'Zona {zona_id}',
+                'accion': f'Continuar estrategia actual - Reducción de reportes esperada',
+                'prioridad': 'BAJA',
+                'tipo': 'mantenimiento',
+                'coordenadas': f"({zona_info['lat_centro']:.4f}, {zona_info['lng_centro']:.4f})"
+            })
+    
+    # Ordenar por prioridad
+    orden_prioridad = {'ALTA': 3, 'MEDIA': 2, 'BAJA': 1}
+    recomendaciones.sort(key=lambda x: orden_prioridad.get(x['prioridad'], 0), reverse=True)
+    
+    return recomendaciones
+
+def crear_modelo_prediccion_reportes(df_resultados, analisis_zonas, grafico_path_base):
+    """
+    Modelo SUPERVISADO para predecir cantidad de reportes por zona
+    """
+    try:
+        print(f"\n=== MODELO DE PREDICCIÓN DE REPORTES ===", file=sys.stderr)
+        
+        if analisis_zonas.empty:
+            print("❌ No hay zonas críticas para entrenar el modelo predictivo", file=sys.stderr)
+            return None
+        
+        # ==========================================
+        # PREPARAR DATOS PARA PREDICCIÓN
+        # ==========================================
+        
+        # Crear dataset temporal por zona
+        datos_prediccion = []
+        
+        # Agrupar por zona y período temporal
+        for zona_id in analisis_zonas.index:
+            zona_reportes = df_resultados[df_resultados['cluster'] == zona_id].copy()
+            
+            if 'fecha_creacion' in zona_reportes.columns:
+                zona_reportes['fecha_creacion'] = pd.to_datetime(zona_reportes['fecha_creacion'])
+                
+                # Agrupar por semana para crear series temporales
+                zona_reportes.set_index('fecha_creacion', inplace=True)
+                reportes_semanales = zona_reportes.resample('W').agg({
+                    'latitud': 'count',  # Cantidad de reportes
+                    'categoria_id': lambda x: x.mode().iloc[0] if len(x.mode()) > 0 else 1,
+                    'estado': lambda x: x.mode().iloc[0] if len(x.mode()) > 0 else 'nuevo'
+                }).rename(columns={'latitud': 'num_reportes'})
+                
+                for fecha, row in reportes_semanales.iterrows():
+                    datos_prediccion.append({
+                        'zona_id': zona_id,
+                        'semana': fecha.isocalendar()[1],
+                        'mes': fecha.month,
+                        'dia_año': fecha.dayofyear,
+                        'categoria_dominante': row['categoria_id'],
+                        'lat_centro': analisis_zonas.loc[zona_id, 'lat_centro'],
+                        'lng_centro': analisis_zonas.loc[zona_id, 'lng_centro'],
+                        'densidad_zona': analisis_zonas.loc[zona_id, 'densidad'],
+                        'num_reportes': row['num_reportes']  # VARIABLE OBJETIVO
+                    })
+        
+        if len(datos_prediccion) < 10:
+            print("❌ Insuficientes datos temporales para predicción", file=sys.stderr)
+            return None
+        
+        df_pred = pd.DataFrame(datos_prediccion)
+        
+        # ==========================================
+        # INGENIERÍA DE CARACTERÍSTICAS TEMPORALES
+        # ==========================================
+        
+        # Características cíclicas (importante para patrones temporales)
+        df_pred['semana_sin'] = np.sin(2 * np.pi * df_pred['semana'] / 52)
+        df_pred['semana_cos'] = np.cos(2 * np.pi * df_pred['semana'] / 52)
+        df_pred['mes_sin'] = np.sin(2 * np.pi * df_pred['mes'] / 12)
+        df_pred['mes_cos'] = np.cos(2 * np.pi * df_pred['mes'] / 12)
+        
+        # Features geográficas y de contexto
+        features_cols = [
+            'semana_sin', 'semana_cos', 'mes_sin', 'mes_cos',
+            'lat_centro', 'lng_centro', 'densidad_zona', 'categoria_dominante'
+        ]
+        
+        X = df_pred[features_cols]
+        y = df_pred['num_reportes']
+        
+        # ==========================================
+        # ENTRENAR MODELO PREDICTIVO
+        # ==========================================
+        
+        if len(X) < 4:
+            print("❌ Insuficientes registros para división train/test", file=sys.stderr)
+            return None
+        
+        # División temporal (más realista que aleatoria)
+        split_point = int(len(X) * 0.8)
+        X_train, X_test = X.iloc[:split_point], X.iloc[split_point:]
+        y_train, y_test = y.iloc[:split_point], y.iloc[split_point:]
+        
+        # Modelo ensemble (robusto para pocos datos)
+        modelo_pred = RandomForestRegressor(
+            n_estimators=50,
+            max_depth=5,
+            min_samples_split=2,
+            random_state=42
+        )
+        
+        modelo_pred.fit(X_train, y_train)
+        
+        # ==========================================
+        # VALIDACIÓN Y MÉTRICAS
+        # ==========================================
+        
+        y_pred = modelo_pred.predict(X_test)
+        mae = mean_absolute_error(y_test, y_pred)
+        r2 = r2_score(y_test, y_pred) if len(y_test) > 1 else 0.0
+        
+        print(f"🎯 Modelo predictivo entrenado:", file=sys.stderr)
+        print(f"   MAE: {mae:.2f} reportes", file=sys.stderr)
+        print(f"   R²: {r2:.3f}", file=sys.stderr)
+        print(f"   Precisión: {max(0, (1 - mae/y.mean()))*100:.1f}%", file=sys.stderr)
+        
+        # ==========================================
+        # GENERAR PREDICCIONES Y RECOMENDACIONES
+        # ==========================================
+        
+        # Predecir próximas 4 semanas para cada zona
+        predicciones_futuras = {}
+        
+        for zona_id in analisis_zonas.index:
+            zona_info = analisis_zonas.loc[zona_id]
+            predicciones_zona = []
+            
+            # Obtener contexto actual de la zona
+            categoria_dom = df_pred[df_pred['zona_id'] == zona_id]['categoria_dominante'].mode()
+            categoria_dom = categoria_dom.iloc[0] if len(categoria_dom) > 0 else 1
+            
+            for semana_futura in range(1, 5):  # Próximas 4 semanas
+                fecha_futura = datetime.now() + timedelta(weeks=semana_futura)
+                
+                X_futuro = pd.DataFrame([{
+                    'semana_sin': np.sin(2 * np.pi * fecha_futura.isocalendar()[1] / 52),
+                    'semana_cos': np.cos(2 * np.pi * fecha_futura.isocalendar()[1] / 52),
+                    'mes_sin': np.sin(2 * np.pi * fecha_futura.month / 12),
+                    'mes_cos': np.cos(2 * np.pi * fecha_futura.month / 12),
+                    'lat_centro': zona_info['lat_centro'],
+                    'lng_centro': zona_info['lng_centro'],
+                    'densidad_zona': zona_info['densidad'],
+                    'categoria_dominante': categoria_dom
+                }])
+                
+                pred_reportes = modelo_pred.predict(X_futuro)[0]
+                predicciones_zona.append({
+                    'semana': semana_futura,
+                    'fecha': fecha_futura.strftime('%Y-%m-%d'),
+                    'reportes_predichos': max(0, round(pred_reportes))
+                })
+            
+            predicciones_futuras[f'zona_{zona_id}'] = predicciones_zona
+        
+        # ==========================================
+        # SISTEMA DE RECOMENDACIONES
+        # ==========================================
+        
+        recomendaciones = generar_recomendaciones_inteligentes(predicciones_futuras, analisis_zonas)
+        
+        print(f"\n📋 RECOMENDACIONES GENERADAS:", file=sys.stderr)
+        for rec in recomendaciones[:3]:  # Top 3
+            print(f"   🔸 {rec['accion']}", file=sys.stderr)
+            print(f"     Zona: {rec['zona']}, Prioridad: {rec['prioridad']}", file=sys.stderr)
+        
+        # Guardar modelo predictivo
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        modelo_pred_path = f"modelos/prediccion_reportes_{timestamp}.joblib"
+        
+        joblib.dump({
+            'modelo_prediccion': modelo_pred,
+            'feature_names': features_cols,
+            'predicciones_futuras': predicciones_futuras,
+            'recomendaciones': recomendaciones,
+            'metricas': {'mae': mae, 'r2': r2},
+            'metadata': {
+                'fecha_entrenamiento': timestamp,
+                'tipo': 'prediccion_reportes_v1.0'
+            }
+        }, modelo_pred_path)
+        
+        print(f"✅ Modelo predictivo guardado: {modelo_pred_path}", file=sys.stderr)
+        
+        return {
+            'modelo_path': modelo_pred_path,
+            'predicciones': predicciones_futuras,
+            'recomendaciones': recomendaciones,
+            'metricas': {'mae': mae, 'r2': r2}
+        }
+        
+    except Exception as e:
+        print(f"❌ Error en modelo predictivo: {str(e)}", file=sys.stderr)
+        print(f"📋 Traceback: {traceback.format_exc()}", file=sys.stderr)
+        return None
+
+# ✅ AHORA SÍ LA FUNCIÓN PRINCIPAL (después de las funciones auxiliares)
 def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=None, min_samples=None, verbose=True):
     """
     Modelo avanzado de detección de zonas críticas con:
@@ -118,7 +354,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 1: CARGA Y VALIDACIÓN DE DATOS
         # ==========================================
-        log_print(f"[ETAPA 1/6] Cargando y validando datos...")
+        log_print(f"[ETAPA 1/7] Cargando y validando datos...")
         
         if not os.path.exists(input_csv):
             raise FileNotFoundError(f"Archivo no encontrado: {input_csv}")
@@ -160,7 +396,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 2: INGENIERÍA DE CARACTERÍSTICAS AVANZADA
         # ==========================================
-        log_print("[ETAPA 2/6] Generando características avanzadas...")
+        log_print("[ETAPA 2/7] Generando características avanzadas...")
         
         # Coordenadas básicas (más importantes)
         df_features = df_alta[['latitud', 'longitud']].copy()
@@ -218,7 +454,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 3: OPTIMIZACIÓN AUTOMÁTICA DE PARÁMETROS
         # ==========================================
-        log_print("[ETAPA 3/6] Optimizando parámetros...")
+        log_print("[ETAPA 3/7] Optimizando parámetros...")
         
         if auto_params:
             # Método k-distance para encontrar eps óptimo
@@ -250,7 +486,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 4: CLUSTERING CON VALIDACIÓN
         # ==========================================
-        log_print("[ETAPA 4/6] Ejecutando clustering con validación...")
+        log_print("[ETAPA 4/7] Ejecutando clustering con validación...")
         
         best_score = -1
         best_labels = None
@@ -323,7 +559,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 5: ANÁLISIS DETALLADO DE RESULTADOS
         # ==========================================
-        log_print("[ETAPA 5/6] Analizando resultados...")
+        log_print("[ETAPA 5/7] Analizando resultados...")
         
         # Agregar resultados al dataframe original
         df_resultados = df_alta.copy()
@@ -414,7 +650,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         # ==========================================
         # ETAPA 6: VISUALIZACIÓN Y GUARDADO
         # ==========================================
-        log_print("[ETAPA 6/6] Generando visualización y guardando modelo...")
+        log_print("[ETAPA 6/7] Generando visualización y guardando modelo...")
 
         # Crear directorios y generar timestamp
         os.makedirs("modelos", exist_ok=True)
@@ -450,7 +686,7 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
             'metricas_validacion': metricas_validacion,
             'metadata': {
                 'fecha_entrenamiento': timestamp,
-                'version': 'avanzado_v2.1',
+                'version': 'hibrido_v2.1',
                 'caracteristicas_usadas': len(df_features.columns),
                 'parametros_optimizados': auto_params,
                 'parametros_finales': {
@@ -467,9 +703,6 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
                 }
             }
         }
-        
-        joblib.dump(modelo_data, modelo_path)
-        log_print(f"✓ Modelo completo guardado: {modelo_path}")
 
         # Generar visualización completa - PASAR n_clusters como parámetro
         grafico_path = os.path.join("graficos", f"zonas_criticas_avanzado_{timestamp}.png")
@@ -480,6 +713,75 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         log_print(f"Zonas críticas detectadas: {n_clusters}")
         log_print(f"Calidad del modelo: {best_score:.3f}")
         log_print(f"Cobertura de reportes: {(len(zonas_criticas)/len(df_resultados)*100):.1f}%")
+
+        # ==========================================
+        # ✅ ETAPA 7: MODELO PREDICTIVO HÍBRIDO INTEGRADO
+        # ==========================================
+        if not analisis_zonas.empty and len(df_resultados) > 50:  # Solo si hay suficientes datos
+            log_print("\n[ETAPA 7/7] Generando predicciones y recomendaciones híbridas...")
+            
+            try:
+                resultado_prediccion = crear_modelo_prediccion_reportes(
+                    df_resultados, analisis_zonas, grafico_path
+                )
+                
+                if resultado_prediccion:
+                    log_print(f"✅ Modelo predictivo integrado exitosamente")
+                    log_print(f"   MAE: {resultado_prediccion['metricas']['mae']:.2f} reportes")
+                    log_print(f"   R²: {resultado_prediccion['metricas']['r2']:.3f}")
+                    log_print(f"   Predicciones generadas para {len(resultado_prediccion['predicciones'])} zonas")
+                    log_print(f"   Recomendaciones: {len(resultado_prediccion['recomendaciones'])}")
+                    
+                    # Agregar predicciones a las métricas principales
+                    metricas_validacion['prediccion'] = resultado_prediccion['metricas'] 
+                    metricas_validacion['zonas_con_prediccion'] = len(resultado_prediccion['predicciones'])
+                    metricas_validacion['total_recomendaciones'] = len(resultado_prediccion['recomendaciones'])
+                    
+                    # Actualizar el modelo_data con predicciones
+                    modelo_data['modelo_prediccion'] = {
+                        'modelo_path': resultado_prediccion['modelo_path'],
+                        'predicciones_futuras': resultado_prediccion['predicciones'],
+                        'recomendaciones': resultado_prediccion['recomendaciones'],
+                        'metricas_prediccion': resultado_prediccion['metricas']
+                    }
+                    
+                    # Agregar flag de modelo híbrido
+                    modelo_data['metadata']['es_modelo_hibrido'] = True
+                    modelo_data['metadata']['version'] = 'hibrido_v2.1'
+                    
+                    # Re-guardar modelo completo con predicciones
+                    joblib.dump(modelo_data, modelo_path)
+                    log_print(f"✅ Modelo híbrido completo guardado: {modelo_path}")
+                    
+                    # Mostrar resumen de recomendaciones principales
+                    log_print(f"\n📋 TOP RECOMENDACIONES:")
+                    for i, rec in enumerate(resultado_prediccion['recomendaciones'][:3], 1):
+                        log_print(f"   {i}. [{rec['prioridad']}] {rec['accion']}")
+                        log_print(f"      Zona: {rec['zona']} - {rec['coordenadas']}")
+                
+                else:
+                    log_print("⚠️ No se pudo generar el modelo predictivo")
+                    modelo_data['metadata']['es_modelo_hibrido'] = False
+                    
+            except Exception as e:
+                log_print(f"⚠️ Error en modelo predictivo integrado: {str(e)}")
+                log_print(f"   Continuando con modelo solo clustering...")
+                modelo_data['metadata']['es_modelo_hibrido'] = False
+                modelo_data['metadata']['error_prediccion'] = str(e)
+
+        else:
+            log_print(f"\n[INFO] Saltando modelo predictivo:")
+            if analisis_zonas.empty:
+                log_print(f"   - No hay zonas críticas detectadas")
+            if len(df_resultados) <= 50:
+                log_print(f"   - Insuficientes datos: {len(df_resultados)} (mín. 50)")
+            
+            modelo_data['metadata']['es_modelo_hibrido'] = False
+            modelo_data['metadata']['razon_no_hibrido'] = "Datos insuficientes o sin zonas críticas"
+
+        # ✅ GUARDAR MODELO CON TODAS LAS MÉTRICAS ACTUALIZADAS
+        joblib.dump(modelo_data, modelo_path)
+        log_print(f"✅ Modelo completo guardado: {modelo_path}")
 
         return modelo_path, grafico_path
 
@@ -492,17 +794,6 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         }
         log_print(f"\n❌ ERROR CRÍTICO:\n{json.dumps(error_details, indent=2)}")
         raise
-
-# Mantener compatibilidad con versión anterior
-def entrenar_modelo_zonas_criticas(input_csv, eps=0.01, min_samples=5, verbose=True):
-    """Wrapper para compatibilidad con la versión anterior"""
-    return entrenar_modelo_zonas_criticas_avanzado(
-        input_csv, 
-        auto_params=False, 
-        eps=eps, 
-        min_samples=min_samples, 
-        verbose=verbose
-    )
 
 if __name__ == "__main__":
     import argparse
@@ -532,7 +823,7 @@ if __name__ == "__main__":
             "success": True,
             "modelo_path": modelo_path,
             "grafico_path": grafico_path,
-            "version": "avanzado_v2.1"
+            "version": "hibrido_v2.1"
         }
         print(json.dumps(resultado))
         
@@ -541,7 +832,7 @@ if __name__ == "__main__":
             "success": False,
             "error": str(e),
             "traceback": traceback.format_exc(),
-            "version": "avanzado_v2.1"
+            "version": "hibrido_v2.1"
         }
         print(json.dumps(resultado_error))
         sys.exit(1)

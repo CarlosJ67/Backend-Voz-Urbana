@@ -1,5 +1,8 @@
 const express = require('express');
 const {exec} = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');  // ✅ AGREGADO para archivos temporales
 const router = express.Router();
 const utilsController = require('../controllers/utilsUsuariosController');
 const utilsReportesController = require('../controllers/utilsReportesController');
@@ -156,11 +159,12 @@ router.post('/generar-comentarios-lote', (req, res) => {
     });
   });
 });
+
 /**
  * @swagger
  * /api/utils/ejecutar-etl-reportes:
  *   post:
- *     summary: Ejecuta el proceso ETL para la tabla 'reportes' y el modelo automático de zonas críticas
+ *     summary: Ejecuta el proceso ETL para la tabla 'reportes' y el modelo híbrido de zonas críticas con predicciones
  *     tags: [Utils]
  *     responses:
  *       200:
@@ -178,21 +182,79 @@ router.post('/generar-comentarios-lote', (req, res) => {
  *                   example: "ETL y modelo ejecutados exitosamente"
  *                 version:
  *                   type: string
- *                   example: "avanzado_v2.1"
+ *                   example: "hibrido_v2.1"
  *                 data:
  *                   type: object
  *                   properties:
  *                     archivo_csv:
  *                       type: string
- *                       example: "exports/etl_data/etl_reportes_limpios_20250728_143022.csv"
+ *                       example: "exports/etl_data/etl_reportes_limpios_20250729_154022.csv"
  *                     modelo_path:
  *                       type: string
- *                       example: "modelos/zonas_criticas_avanzado_20250728_143045.joblib"
+ *                       example: "modelos/zonas_criticas_avanzado_20250729_154045.joblib"
  *                     grafico_path:
  *                       type: string
- *                       example: "graficos/zonas_criticas_avanzado_20250728_143045.png"
+ *                       example: "graficos/zonas_criticas_avanzado_20250729_154045.png"
  *                     metricas:
  *                       type: object
+ *                       properties:
+ *                         silhouette_score:
+ *                           type: number
+ *                           example: 0.742
+ *                         n_clusters:
+ *                           type: integer
+ *                           example: 4
+ *                         prediccion:
+ *                           type: object
+ *                           properties:
+ *                             mae:
+ *                               type: number
+ *                               example: 2.34
+ *                             r2:
+ *                               type: number
+ *                               example: 0.651
+ *                         zonas_con_prediccion:
+ *                           type: integer
+ *                           example: 4
+ *                         total_recomendaciones:
+ *                           type: integer
+ *                           example: 12
+ *                     modelo_hibrido:
+ *                       type: object
+ *                       properties:
+ *                         predicciones_futuras:
+ *                           type: object
+ *                           additionalProperties:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 semana:
+ *                                   type: integer
+ *                                   example: 1
+ *                                 fecha:
+ *                                   type: string
+ *                                   example: "2025-08-05"
+ *                                 reportes_predichos:
+ *                                   type: integer
+ *                                   example: 12
+ *                         recomendaciones:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               zona:
+ *                                 type: string
+ *                                 example: "Zona 0"
+ *                               accion:
+ *                                 type: string
+ *                                 example: "Reforzar atención preventiva - Se esperan 12 reportes"
+ *                               prioridad:
+ *                                 type: string
+ *                                 example: "ALTA"
+ *                               coordenadas:
+ *                                 type: string
+ *                                 example: "(20.2750, -97.9550)"
  *                     estadisticas_etl:
  *                       type: object
  *                       properties:
@@ -208,7 +270,6 @@ router.post('/generar-comentarios-lote', (req, res) => {
  *       500:
  *         description: Error al ejecutar el proceso
  */
-
 router.post('/ejecutar-etl-reportes', (req, res) => {
   const etlCmd = `python seeders/etl_reportes.py`;
 
@@ -273,7 +334,7 @@ router.post('/ejecutar-etl-reportes', (req, res) => {
 
     // Normalizar la ruta para sistemas Windows/Unix
     const csvPathNormalized = csvPath.replace(/\\/g, '/');
-    console.log('[MODELO] Iniciando modelo automático con archivo:', csvPathNormalized);
+    console.log('[MODELO] Iniciando modelo híbrido con archivo:', csvPathNormalized);
 
     const modelCmd = `python seeders/aprendizaje_no_supervisado.py "${csvPathNormalized}" --quiet`;
 
@@ -338,30 +399,193 @@ router.post('/ejecutar-etl-reportes', (req, res) => {
           });
         }
 
-        // ✅ RESPUESTA SIMPLIFICADA - sin mostrar parámetros técnicos
-        res.json({
-          success: true,
-          message: 'ETL y modelo ejecutados exitosamente',
-          version: version,
-          data: {
-            archivo_csv: csvPathNormalized,
-            modelo_path: modeloPath,
-            grafico_path: graficoPath,
-            metricas: result.metricas || {},
-            // Estadísticas del ETL extraídas del log
-            estadisticas_etl: {
-              registros_procesados: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[1] || 'N/A',
-              registros_totales: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[2] || 'N/A',
-              reportes_alta_prioridad: stderr.match(/Reportes alta prioridad: (\d+)/)?.[1] || 'N/A',
-              tasa_retencion: stderr.match(/\(([0-9.]+)%\)/)?.[1] + '%' || 'N/A'
-            }
-          },
-          logs: {
-            etl: stderr || stdout,
-            modelo: modelStderr || 'Logs enviados a stderr'
-          },
-          warnings: error ? ['Error Unicode en la salida del ETL (ignorado)'] : [],
-          timestamp: new Date().toISOString()
+        // ✅ FUNCIÓN MEJORADA DE EXTRACCIÓN DE DATOS HÍBRIDOS
+        const extraerDatosHibridos = () => {
+          return new Promise((resolve) => {
+            
+            // ✅ CREAR ARCHIVO TEMPORAL PARA EVITAR PROBLEMAS DE COMILLAS
+            const tempScriptPath = path.join(os.tmpdir(), `extract_hibrido_${Date.now()}.py`);
+            
+            const extractScript = `
+import joblib
+import json
+import sys
+import os
+
+try:
+    modelo_path = "${modeloPath.replace(/\\/g, '/')}"
+    
+    if not os.path.exists(modelo_path):
+        resultado = {"es_hibrido": False, "error": "Modelo no encontrado"}
+        print(json.dumps(resultado, ensure_ascii=False, indent=2))
+        sys.exit(0)
+    
+    # Cargar modelo
+    modelo_data = joblib.load(modelo_path)
+    
+    # Extraer información del modelo híbrido
+    resultado_extraccion = {
+        "es_hibrido": modelo_data.get('metadata', {}).get('es_modelo_hibrido', False),
+        "metricas": modelo_data.get('metricas_validacion', {}),
+        "predicciones_futuras": {},
+        "recomendaciones": []
+    }
+    
+    # Si es híbrido, extraer predicciones y recomendaciones
+    if 'modelo_prediccion' in modelo_data:
+        pred_data = modelo_data['modelo_prediccion']
+        resultado_extraccion["predicciones_futuras"] = pred_data.get('predicciones_futuras', {})
+        resultado_extraccion["recomendaciones"] = pred_data.get('recomendaciones', [])
+        
+        # Fusionar métricas de predicción con las principales
+        if 'metricas_prediccion' in pred_data:
+            resultado_extraccion["metricas"]["prediccion"] = pred_data['metricas_prediccion']
+        
+        # Agregar contadores
+        resultado_extraccion["metricas"]["zonas_con_prediccion"] = len(pred_data.get('predicciones_futuras', {}))
+        resultado_extraccion["metricas"]["total_recomendaciones"] = len(pred_data.get('recomendaciones', []))
+    
+    # Imprimir resultado con formato bonito
+    print(json.dumps(resultado_extraccion, ensure_ascii=False, indent=2))
+    
+except Exception as e:
+    error_resultado = {"es_hibrido": False, "error": str(e)}
+    print(json.dumps(error_resultado, ensure_ascii=False, indent=2))
+    sys.exit(1)
+`;
+
+            // ✅ ESCRIBIR SCRIPT TEMPORAL
+            fs.writeFileSync(tempScriptPath, extractScript, 'utf8');
+            
+            // ✅ EJECUTAR SCRIPT TEMPORAL
+            exec(`python "${tempScriptPath}"`, { 
+              timeout: 30000,
+              maxBuffer: 1024 * 1024 * 5 // 5MB buffer
+            }, (error, stdout, stderr) => {
+              
+              // ✅ LIMPIAR ARCHIVO TEMPORAL
+              try {
+                fs.unlinkSync(tempScriptPath);
+              } catch (cleanupError) {
+                console.warn('[HÍBRIDO] Error limpiando archivo temporal:', cleanupError.message);
+              }
+              
+              console.log('[HÍBRIDO] STDOUT completo:', stdout);
+              console.log('[HÍBRIDO] STDERR:', stderr);
+              
+              if (error) {
+                console.warn('[HÍBRIDO] Error ejecutando extracción:', error.message);
+                resolve({ es_hibrido: false, error: error.message });
+                return;
+              }
+              
+              if (!stdout || stdout.trim() === '') {
+                console.warn('[HÍBRIDO] Salida vacía del script de extracción');
+                resolve({ es_hibrido: false, error: 'Salida vacía' });
+                return;
+              }
+              
+              try {
+                // ✅ LIMPIAR Y PARSEAR JSON
+                const jsonLimpio = stdout.trim();
+                console.log('[HÍBRIDO] JSON a parsear:', jsonLimpio);
+                
+                const datos = JSON.parse(jsonLimpio);
+                
+                if (datos.es_hibrido) {
+                  console.log('✅ [HÍBRIDO] Datos híbridos extraídos exitosamente');
+                  console.log(`📊 Predicciones: ${Object.keys(datos.predicciones_futuras || {}).length} zonas`);
+                  console.log(`💡 Recomendaciones: ${(datos.recomendaciones || []).length} elementos`);
+                  console.log(`🎯 Métricas híbridas:`, datos.metricas);
+                } else {
+                  console.log('ℹ️ [HÍBRIDO] Modelo solo clustering (no híbrido)');
+                  if (datos.error) {
+                    console.log(`   Razón: ${datos.error}`);
+                  }
+                }
+                
+                resolve(datos);
+                
+              } catch (parseError) {
+                console.error('[HÍBRIDO] Error parseando JSON:', parseError.message);
+                console.error('[HÍBRIDO] Contenido problemático:', stdout);
+                resolve({ 
+                  es_hibrido: false, 
+                  error: `Parse error: ${parseError.message}`,
+                  raw_output: stdout
+                });
+              }
+            });
+          });
+        };
+
+        // ✅ EJECUTAR EXTRACCIÓN DE DATOS HÍBRIDOS
+        extraerDatosHibridos().then(datosHibridos => {
+          
+          // ✅ CONSTRUIR RESPUESTA MEJORADA (mantiene compatibilidad total)
+          const respuesta = {
+            success: true,
+            message: 'ETL y modelo ejecutados exitosamente',
+            version: datosHibridos.es_hibrido ? 'hibrido_v2.1' : version,
+            data: {
+              archivo_csv: csvPathNormalized,
+              modelo_path: modeloPath,
+              grafico_path: graficoPath,
+              metricas: datosHibridos.metricas || result.metricas || {},
+              // ✅ ESTADÍSTICAS ETL SE MANTIENEN IGUALES
+              estadisticas_etl: {
+                registros_procesados: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[1] || 'N/A',
+                registros_totales: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[2] || 'N/A',
+                reportes_alta_prioridad: stderr.match(/Reportes alta prioridad: (\d+)/)?.[1] || 'N/A',
+                tasa_retencion: stderr.match(/\(([0-9.]+)%\)/)?.[1] + '%' || 'N/A'
+              },
+              // ✅ AGREGAR DATOS HÍBRIDOS SOLO SI ESTÁN DISPONIBLES
+              ...(datosHibridos.es_hibrido && {
+                modelo_hibrido: {
+                  predicciones_futuras: datosHibridos.predicciones_futuras,
+                  recomendaciones: datosHibridos.recomendaciones
+                }
+              })
+            },
+            logs: {
+              etl: stderr || stdout,
+              modelo: modelStderr || 'Logs enviados a stderr'
+            },
+            warnings: error ? ['Error Unicode en la salida del ETL (ignorado)'] : [],
+            timestamp: new Date().toISOString()
+          };
+
+          // ✅ RESPUESTA FINAL
+          console.log(`🎉 [MODELO] ${datosHibridos.es_hibrido ? 'Modelo híbrido' : 'Modelo clustering'} completado exitosamente`);
+          res.json(respuesta);
+          
+        }).catch(extractError => {
+          console.warn('[HÍBRIDO] Error en extracción híbrida, devolviendo respuesta básica:', extractError.message);
+          
+          // ✅ FALLBACK A RESPUESTA BÁSICA SI FALLA LA EXTRACCIÓN
+          res.json({
+            success: true,
+            message: 'ETL y modelo ejecutados exitosamente',
+            version: version,
+            data: {
+              archivo_csv: csvPathNormalized,
+              modelo_path: modeloPath,
+              grafico_path: graficoPath,
+              metricas: result.metricas || {},
+              estadisticas_etl: {
+                registros_procesados: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[1] || 'N/A',
+                registros_totales: stderr.match(/Registros procesados: (\d+)\/(\d+)/)?.[2] || 'N/A',
+                reportes_alta_prioridad: stderr.match(/Reportes alta prioridad: (\d+)/)?.[1] || 'N/A',
+                tasa_retencion: stderr.match(/\(([0-9.]+)%\)/)?.[1] + '%' || 'N/A'
+              }
+            },
+            logs: {
+              etl: stderr || stdout,
+              modelo: modelStderr || 'Logs enviados a stderr'
+            },
+            warnings: error ? ['Error Unicode en la salida del ETL (ignorado)'] : [],
+            timestamp: new Date().toISOString()
+          });
         });
 
       } catch (parseError) {
