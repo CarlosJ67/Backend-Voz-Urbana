@@ -19,7 +19,8 @@ const User = sequelize.define(
       allowNull: false,
     },
     rol: {
-      type: DataTypes.ENUM("ciudadano", "admin"),
+      type: DataTypes.ENUM("ciudadano", "admin"), 
+      allowNull: false 
     },
     puntos: {
       type: DataTypes.INTEGER,
@@ -27,6 +28,7 @@ const User = sequelize.define(
     },
     activo: {
       type: DataTypes.BOOLEAN,
+      allowNull: false,
       defaultValue: true,
     },
   },

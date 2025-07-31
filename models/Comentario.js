@@ -22,9 +22,14 @@ const Comentario = sequelize.define('Comentario', {
 },
   fecha_comentario: 
   { type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
+    defaultValue: DataTypes.NOW, 
+    allowNull: false 
 },
-  activo: { type: DataTypes.BOOLEAN, defaultValue: true }
+  activo: { 
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true 
+  }
 }, {
   tableName: 'comentarios',
   timestamps: false

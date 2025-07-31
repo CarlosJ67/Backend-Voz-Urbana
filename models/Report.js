@@ -24,7 +24,8 @@ const Report = sequelize.define('Report', {
   }, 
   ubicacion: 
   { 
-    type: DataTypes.STRING
+    type: DataTypes.STRING, 
+    allowNull: false 
    },
   latitud: 
   { 
@@ -39,12 +40,21 @@ const Report = sequelize.define('Report', {
   estado: 
   { 
     type: DataTypes.ENUM('nuevo', 'en_proceso', 'resuelto', 'cerrado', 'no_aprobado'), 
-    defaultValue: 'nuevo' 
+    allowNull: false,
+    defaultValue: 'nuevo',
   },
-  prioridad: { type: DataTypes.ENUM('baja', 'media', 'alta'), defaultValue: 'media' },
-  imagen_url: { type: DataTypes.STRING },
-  usuario_id: { type: DataTypes.INTEGER, allowNull: false }, 
-  asignado_a: { type: DataTypes.INTEGER },
+  prioridad: { 
+    type: DataTypes.ENUM('baja', 'media', 'alta'),
+    allowNull: false,
+    defaultValue: 'media' 
+  },
+  imagen_url: { 
+    type: DataTypes.STRING 
+  },
+  usuario_id: { 
+    type: DataTypes.INTEGER,
+     allowNull: false 
+    }
 }, {
   tableName: 'reportes',
   timestamps: true, 

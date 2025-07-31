@@ -9,11 +9,11 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    #'password': '1234',
-    'password': '12345',
+    'password': '1234',
+    #'password': '12345',
     'database': 'voz_urbana',
-    #'port': 3307
-    'port': 3306
+    'port': 3307
+    #'port': 3306
 }
 
 # ✅ ACTUALIZADO: Agregado el nuevo estado 'no_aprobado'
@@ -625,7 +625,7 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             
             reportes.append((
                 titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad,
-                None, usuario_id, None, fecha_creacion.strftime('%Y-%m-%d %H:%M:%S'),
+                None, usuario_id, fecha_creacion.strftime('%Y-%m-%d %H:%M:%S'),
                 fecha_actualizacion.strftime('%Y-%m-%d %H:%M:%S')
             ))
         
@@ -634,7 +634,7 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
         for retry in range(max_retries):
             try:
                 cursor.executemany(
-                    "INSERT INTO reportes (titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad, imagen_url, usuario_id, asignado_a, fecha_creacion, fecha_actualizacion) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    "INSERT INTO reportes (titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad, imagen_url, usuario_id, fecha_creacion, fecha_actualizacion) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     reportes
                 )
                 conn.commit()

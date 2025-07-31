@@ -23,7 +23,11 @@ const VotoReporte = sequelize.define('VotoReporte', {
     allowNull: false,
     defaultValue: 'none'
   },
-  fecha_voto: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+  fecha_voto: { 
+    type: DataTypes.DATE,  
+    allowNull: false,
+    defaultValue: DataTypes.NOW 
+  }
 }, {
   tableName: 'votos_reportes',
   timestamps: false,

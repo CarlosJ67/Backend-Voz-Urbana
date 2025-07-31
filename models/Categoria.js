@@ -12,15 +12,18 @@ const Categoria = sequelize.define('Categoria', {
      allowNull: false 
     },
   icono: { 
-    type: DataTypes.STRING 
+    type: DataTypes.STRING,
+    allowNull: false  
 },
   descripcion: { 
-    type: DataTypes.TEXT 
+    type: DataTypes.TEXT, 
+    allowNull: false 
 },
   activa: { 
-    type: DataTypes.BOOLEAN,
-     defaultValue: true 
-    },
+    type: DataTypes.BOOLEAN, 
+    allowNull: false,
+    defaultValue: true 
+  },
   orden_visualizacion: { 
     type: DataTypes.INTEGER,
      defaultValue: 0 
