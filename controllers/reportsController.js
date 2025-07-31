@@ -31,9 +31,22 @@ const reportsController = {
       // Añade puntos al usuario por crear un reporte
       await User.increment("puntos", { by: 10, where: { id: usuario_id } });
 
+      // Obtener el reporte con información del usuario para la notificación
+      const reportWithUser = await Report.findByPk(report.id, {
+        include: [{
+          model: User,
+          attributes: ['id', 'nombre', 'email']
+        }]
+      });
+
+      // Enviar notificación WebSocket sobre el nuevo reporte
+      if (req.app && req.app.locals.notificationWS) {
+        req.app.locals.notificationWS.notifyNewReport(reportWithUser);
+      }
+
       res.status(201).json({
         message: "Reporte creado exitosamente",
-        report,
+        report: reportWithUser,
       });
     } catch (error) {
       res
@@ -268,6 +281,8 @@ const reportsController = {
         return res.status(400).json({ message: 'Estado no válido. Debe ser: nuevo, en_proceso, resuelto, cerrado o no_aprobado' });
       }
 
+      const oldStatus = report.estado;
+
       // Actualizar solo los campos permitidos para admin
       if (estado !== undefined) {
         report.estado = estado;
@@ -285,6 +300,11 @@ const reportsController = {
           attributes: ['id', 'nombre', 'email']
         }]
       });
+
+      // Enviar notificación WebSocket sobre el cambio de estado
+      if (req.app && req.app.locals.notificationWS && estado && oldStatus !== estado) {
+        req.app.locals.notificationWS.notifyStatusChange(updatedReport, oldStatus, estado);
+      }
 
       res.json({
         message: 'Estado del reporte actualizado exitosamente',
