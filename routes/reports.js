@@ -3,6 +3,7 @@ const router = express.Router();
 const reportsController = require("../controllers/reportsController");
 const authMiddleware = require("../middleware/auth");
 const isAdmin = require("../middleware/isAdmin");
+const {upload,optimizeImage} = require("../middleware/upload");
 
 /**
  * @swagger
@@ -44,9 +45,10 @@ const isAdmin = require("../middleware/isAdmin");
  *               longitud:
  *                 type: number
  *                 example: -99.133209
- *               imagen_url:
+ *               imagen:
  *                 type: string
- *                 example: https://ejemplo.com/imagen-bache.jpg
+ *                 format: binary
+ *                 description: Archivo de imagen (opcional)
  *               prioridad:
  *                 type: string
  *                 enum: [baja, media, alta]
@@ -57,8 +59,12 @@ const isAdmin = require("../middleware/isAdmin");
  *       401:
  *         description: Token no proporcionado o inválido
  */
-router.post("/", authMiddleware, reportsController.createReport);
-
+router.post("/", 
+  authMiddleware, 
+  upload.single('imagen'), 
+  optimizeImage,
+  reportsController.createReport
+);
 /**
  * @swagger
  * /api/reports:

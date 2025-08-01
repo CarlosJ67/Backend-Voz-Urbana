@@ -5,6 +5,8 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./swagger");
 const cors = require("cors");
 const NotificationWebSocket = require("./websocket");
+const path = require("path");
+const compression = require('compression');
 
 const app = express();
 const server = http.createServer(app);
@@ -19,6 +21,14 @@ const utilsRoutes = require("./routes/utils");
 // Middlewares
 app.use(cors());
 app.use(express.json());
+app.use(compression());
+
+// Servir archivos estáticos (imágenes)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '1y', // Cache por 1 año
+  etag: true,
+  lastModified: true
+}));
 
 // Inicializar WebSocket
 const notificationWS = new NotificationWebSocket(server);

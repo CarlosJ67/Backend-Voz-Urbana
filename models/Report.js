@@ -48,7 +48,7 @@ const Report = sequelize.define('Report', {
     allowNull: false,
     defaultValue: 'media' 
   },
-  imagen_url: { 
+  imagen_path: { 
     type: DataTypes.STRING 
   },
   usuario_id: { 

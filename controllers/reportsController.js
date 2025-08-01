@@ -11,19 +11,25 @@ const reportsController = {
         latitud,
         longitud,
         ubicacion,
-        imagen_url,
         prioridad,
       } = req.body;
       const usuario_id = req.user.id;
 
-      const report = await Report.create({
+      // Manejar imagen subida
+      let imagen_path = null;
+      if (req.file) {
+        // Guardar la ruta relativa de la imagen
+        imagen_path = `/uploads/reports/${req.file.filename}`;
+      }
+
+     const report = await Report.create({
         titulo,
         descripcion,
-        categoria_id,
-        latitud,
-        longitud,
+        categoria_id: parseInt(categoria_id),
+        latitud: parseFloat(latitud),
+        longitud: parseFloat(longitud),
         ubicacion,
-        imagen_url,
+        imagen_path, 
         usuario_id,
         prioridad,
       });
@@ -44,9 +50,27 @@ const reportsController = {
         req.app.locals.notificationWS.notifyNewReport(reportWithUser);
       }
 
+      // Construir URL absoluta para la imagen si existe
+      let imagen_url = null;
+      if (reportWithUser.imagen_path) {
+        const protocol = req.protocol;
+        const host = req.get('host');
+        imagen_url = `${protocol}://${host}${reportWithUser.imagen_path}`;
+      }
+
+      // Formatear fechas en ISO
+      const fecha_creacion = reportWithUser.fecha_creacion ? new Date(reportWithUser.fecha_creacion).toISOString() : null;
+      const fecha_actualizacion = reportWithUser.fecha_actualizacion ? new Date(reportWithUser.fecha_actualizacion).toISOString() : null;
+
+      // Responder con objeto enriquecido
       res.status(201).json({
         message: "Reporte creado exitosamente",
-        report: reportWithUser,
+        report: {
+          ...reportWithUser.toJSON(),
+          imagen_url,
+          fecha_creacion,
+          fecha_actualizacion
+        }
       });
     } catch (error) {
       res
@@ -205,10 +229,9 @@ const reportsController = {
         "latitud",
         "longitud",
         "ubicacion",
-        "imagen_url",
+        "imagen_path",
         "prioridad",
         "estado",
-        "asignado_a",
       ];
 
       camposActualizables.forEach((campo) => {
@@ -286,9 +309,6 @@ const reportsController = {
       // Actualizar solo los campos permitidos para admin
       if (estado !== undefined) {
         report.estado = estado;
-      }
-      if (asignado_a !== undefined) {
-        report.asignado_a = asignado_a;
       }
 
       await report.save();
