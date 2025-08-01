@@ -15,11 +15,11 @@ def ejecutar_etl():
     """
     # Configuración de conexión MySQL
     db_user = 'root'
-    db_password = '1234'
-    #db_password = '12345'
+    #db_password = '1234'
+    db_password = '12345'
     db_host = 'localhost'
-    db_port = 3307
-    #db_port = 3306
+    #db_port = 3307
+    db_port = 3306
     db_name = 'voz_urbana'
 
     try:
@@ -58,7 +58,7 @@ def ejecutar_etl():
         df['ubicacion'] = df['ubicacion'].fillna('').str.strip()
         df['estado'] = df['estado'].fillna('nuevo').str.strip().str.lower()
         df['prioridad'] = df['prioridad'].fillna('media').str.strip().str.lower()
-        df['imagen_path'] = df['imagen_url'].fillna('')
+        df['imagen_path'] = df['imagen_path'].fillna('')
         
         # 2. LIMPIEZA Y VALIDACIÓN DE COORDENADAS
         logger.info("Validando y limpiando coordenadas...")

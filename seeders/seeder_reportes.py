@@ -9,11 +9,11 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '1234',
-    #'password': '12345',
+    #'password': '1234',
+    'password': '12345',
     'database': 'voz_urbana',
-    'port': 3307
-    #'port': 3306
+    #'port': 3307
+    'port': 3306
 }
 
 # ✅ ACTUALIZADO: Agregado el nuevo estado 'no_aprobado'
@@ -359,55 +359,161 @@ titulosOtros = [
     'Derrumbes menores en laderas', 'Falta de atención a denuncias previas'
 ]
 
-descripcionesBase = [
-    'El problema persiste desde hace más de una semana y está afectando a varios vecinos.',
-    'Se ha reportado en múltiples ocasiones sin que se realice la reparación correspondiente.',
-    'La situación empeora con las lluvias recientes y requiere atención inmediata.',
-    'Representa un riesgo para la salud pública y la seguridad de los transeúntes.',
-    'Varios ciudadanos han presentado quejas similares en la misma zona.',
-    'El daño en la vía ha causado varios accidentes menores en los últimos días.',
-    'Es particularmente peligroso durante la noche cuando la visibilidad es reducida.',
-    'La reparación temporal realizada no ha sido suficiente para resolver el problema.',
-    'Se encuentra en una zona de alto tráfico peatonal y vehicular.',
-    'Las lluvias recientes han exacerbado el daño en la superficie.',
-    'La acumulación atrae plagas y genera malos olores en toda la manzana.',
-    'Los vecinos han intentado comunicarse con el servicio de limpieza sin respuesta.',
-    'Los desechos incluyen materiales que podrían ser peligrosos para los niños.',
-    'El contenedor está dañado y necesita ser reemplazado urgentemente.',
-    'La basura se ha esparcido por el área debido al viento y animales.',
-    'El árbol presenta signos de enfermedad y podría caer completamente pronto.',
-    'El área se ha convertido en un criadero de mosquitos y otros insectos.',
-    'Los equipos recreativos presentan bordes filosos que son peligrosos.',
-    'La vegetación ha crecido tanto que obstruye el paso peatonal.',
-    'El lugar favorito de los niños ahora es inseguro para su uso.',
-    'La oscuridad en la zona ha incrementado los actos delictivos recientemente.',
-    'Varios residentes han reportado sentir inseguridad al pasar por el área.',
-    'El equipo dañado forma parte de un sistema crítico de vigilancia.',
-    'Los actos vandálicos ocurren casi todas las noches sin que haya respuesta.',
-    'La situación está escalando y podría terminar en un incidente grave.',
-    'Se solicita intervención urgente antes de que ocurra un accidente.',
-    'El problema afecta principalmente a adultos mayores y niños de la zona.',
-    'La comunidad está dispuesta a colaborar con las autoridades para resolverlo.',
-    'Es un riesgo latente que ha sido ignorado por demasiado tiempo.',
-    'La solución temporal aplicada anteriormente ya no es efectiva.',
-    'Varias personas han resultado afectadas por esta situación.',
-    'El daño parece ser estructural y requiere atención profesional.',
-    'Se han presentado quejas formales pero no ha habido seguimiento.',
-    'El problema se extiende a varias cuadras a la redonda.',
-    'La temporada de lluvias podría empeorar significativamente la situación.'
-]
-
-def getRandomDescripcion(i, titulo=''):
-    base = random.choice(descripcionesBase)
-    segunda = random.choice([d for d in descripcionesBase if d != base])
-    combinaciones = [
-        f"{base} {segunda}",
-        f"{base}. Además, {segunda.lower()}",
-        f"{base}. Cabe destacar que {segunda.lower()}",
-        f"Primer reporte: {base}. Actualización: {segunda.lower()}",
-        f"{titulo if titulo else ''}: {base}. {segunda}",
-    ]
-    return random.choice(combinaciones)
+# ✅ NUEVA FUNCIÓN: Descripciones contextuales por categoría
+def getRandomDescripcion(categoria_id, titulo=''):
+    """✅ NUEVA: Genera descripciones específicas según la categoría y título del reporte"""
+    
+    # Descripciones específicas por categoría
+    descripciones_por_categoria = {
+        1: [  # Infraestructura
+            'La estructura presenta daños visibles que comprometen la seguridad peatonal y vehicular.',
+            'El deterioro ha empeorado con las lluvias recientes, creando condiciones peligrosas.',
+            'Varios vecinos han reportado tropiezos y caídas en esta zona.',
+            'El daño estructural requiere reparación urgente antes de que cause accidentes graves.',
+            'La superficie irregular dificulta el tránsito y acceso para personas con discapacidad.',
+            'Se observan grietas que se extienden y podrían causar un colapso parcial.',
+            'El área afectada está en una zona de alto tráfico peatonal y necesita atención inmediata.',
+            'La falta de mantenimiento ha resultado en condiciones inseguras para la comunidad.',
+            'Los materiales sueltos representan un riesgo tanto para peatones como para vehículos.',
+            'La reparación temporal anterior no fue efectiva y el problema persiste.'
+        ],
+        2: [  # Servicios Públicos
+            'El servicio ha estado interrumpido por más de 48 horas afectando a múltiples familias.',
+            'Los residentes reportan fallas constantes en el suministro eléctrico de la zona.',
+            'La infraestructura eléctrica muestra signos de deterioro y posibles fallas de seguridad.',
+            'El problema afecta el funcionamiento normal de comercios y hogares del sector.',
+            'Se requiere revisión técnica urgente para evitar cortes prolongados de energía.',
+            'Los equipos presentan ruidos anormales y podrían fallar completamente pronto.',
+            'La comunidad ha estado sin servicio confiable, afectando sus actividades diarias.',
+            'Las condiciones del cableado representan un riesgo de electrocución para transeúntes.',
+            'El transformador muestra signos de sobrecarga y necesita mantenimiento preventivo.',
+            'Los comerciantes reportan pérdidas económicas debido a las fallas constantes.'
+        ],
+        3: [  # Saneamiento
+            'El problema de drenaje ha causado acumulación de agua contaminada en la vía pública.',
+            'Los malos olores afectan la calidad de vida de los residentes de la zona.',
+            'La fuga representa un riesgo sanitario y desperdicio del recurso hídrico.',
+            'Las aguas residuales están contaminando el suelo y podrían afectar pozos cercanos.',
+            'La obstrucción causa desbordamientos durante las lluvias, inundando casas vecinas.',
+            'Se observa proliferación de insectos y roedores debido al agua estancada.',
+            'El sistema requiere limpieza profunda y reparación de conexiones dañadas.',
+            'Los vecinos reportan problemas de salud relacionados con la contaminación del agua.',
+            'La presión del agua es insuficiente para abastecer adecuadamente los hogares.',
+            'Es urgente restaurar el flujo normal para prevenir problemas de salud pública.'
+        ],
+        4: [  # Limpieza
+            'La acumulación de desechos está atrayendo fauna nociva y generando malos olores.',
+            'El servicio de recolección no ha pasado por esta zona en más de una semana.',
+            'Los residuos se han esparcido por la calle debido al viento y animales callejeros.',
+            'La situación está creando un foco de infección que pone en riesgo la salud pública.',
+            'Los contenedores están dañados y no pueden contener adecuadamente la basura.',
+            'Se observan materiales peligrosos mezclados con residuos domésticos comunes.',
+            'La basura obstruye el drenaje pluvial y podría causar inundaciones.',
+            'Los comerciantes de la zona reportan que la situación afecta sus ventas.',
+            'Es necesario incrementar la frecuencia de recolección en esta área de alta densidad.',
+            'La comunidad está dispuesta a colaborar con horarios específicos de recolección.'
+        ],
+        5: [  # Seguridad
+            'Los incidentes delictivos han aumentado significativamente en esta zona.',
+            'La falta de iluminación y vigilancia favorece las actividades delictivas.',
+            'Los residentes evitan transitar por el área durante horas nocturnas.',
+            'Se requiere incrementar la presencia policial y mejorar la infraestructura de seguridad.',
+            'Los actos vandálicos han dañado propiedades públicas y privadas del sector.',
+            'Las cámaras de seguridad no funcionan, dejando la zona sin monitoreo.',
+            'Los comerciantes han sido víctimas de robos en múltiples ocasiones.',
+            'La comunidad solicita patrullajes más frecuentes y puntos de vigilancia.',
+            'El vandalismo continuo genera un ambiente de inseguridad para las familias.',
+            'Es urgente implementar medidas preventivas antes de que ocurran incidentes graves.'
+        ],
+        6: [  # Transporte
+            'El problema vial está causando congestionamientos y accidentes menores.',
+            'Los usuarios del transporte público reportan retrasos constantes en esta ruta.',
+            'La señalización deficiente confunde a conductores y aumenta el riesgo de accidentes.',
+            'Las unidades de transporte operan en condiciones inseguras para los pasajeros.',
+            'La infraestructura vial necesita reparación para garantizar tránsito seguro.',
+            'Los peatones no tienen cruzamentos seguros en esta intersección de alto tráfico.',
+            'El mantenimiento de la flota de transporte público es deficiente.',
+            'Los horarios irregulares afectan la movilidad de trabajadores y estudiantes.',
+            'Se requiere mejor coordinación semafórica para optimizar el flujo vehicular.',
+            'La ruta necesita reubicación de paradas para mejorar la seguridad peatonal.'
+        ],
+        7: [  # Medio Ambiente
+            'El problema ambiental está afectando la calidad del aire y agua en la zona.',
+            'La vegetación dañada representa un riesgo para la infraestructura cercana.',
+            'Los niveles de contaminación han aumentado por la actividad industrial no regulada.',
+            'Se observa mortandad de flora y fauna local debido a la contaminación.',
+            'El ruido excesivo afecta el descanso y bienestar de los residentes.',
+            'Los desechos químicos están contaminando el suelo y fuentes de agua.',
+            'Es necesario implementar medidas de protección ambiental inmediatas.',
+            'La quema irregular de materiales genera humo tóxico para la comunidad.',
+            'El área verde requiere rehabilitación para restaurar el ecosistema local.',
+            'Se solicita inspección ambiental y aplicación de sanciones correspondientes.'
+        ],
+        8: [  # Salud Pública
+            'La situación representa un riesgo grave de brote epidemiológico en la comunidad.',
+            'Las condiciones insalubres están causando enfermedades respiratorias y gastrointestinales.',
+            'Se requiere intervención sanitaria urgente para prevenir la propagación de enfermedades.',
+            'Los servicios de salud son insuficientes para atender la demanda de la población.',
+            'La falta de agua potable obliga a los vecinos a usar fuentes contaminadas.',
+            'Se han reportado casos sospechosos de enfermedades transmisibles en el área.',
+            'El manejo inadecuado de residuos médicos pone en riesgo la salud pública.',
+            'Las instalaciones sanitarias no cumplen con normas básicas de higiene.',
+            'Se necesita fumigación para controlar vectores de enfermedades tropicales.',
+            'La comunidad solicita campañas de vacunación y educación sanitaria.'
+        ],
+        9: [  # Otros
+            'La situación está afectando la convivencia pacífica y el orden público.',
+            'Los residentes reportan molestias continuas que alteran su calidad de vida.',
+            'Se requiere mediación municipal para resolver el conflicto de manera efectiva.',
+            'El problema se ha extendido y ahora afecta a múltiples cuadras del sector.',
+            'Las actividades no reguladas están impactando negativamente el comercio local.',
+            'La falta de normativa clara permite que la situación se repita constantemente.',
+            'Se solicita intervención de autoridades competentes para establecer orden.',
+            'El uso inadecuado del espacio público afecta el libre tránsito de ciudadanos.',
+            'Es necesario establecer regulaciones claras para prevenir futuros conflictos.',
+            'La comunidad propone soluciones colaborativas para resolver el problema.'
+        ]
+    }
+    
+    # Obtener descripciones específicas de la categoría
+    descripciones_categoria = descripciones_por_categoria.get(categoria_id, descripciones_por_categoria[9])
+    
+    # Seleccionar descripción principal
+    descripcion_principal = random.choice(descripciones_categoria)
+    
+    # 40% de probabilidad de agregar contexto adicional específico
+    if random.random() < 0.4:
+        contextos_adicionales = [
+            "Los vecinos han intentado soluciones temporales sin éxito.",
+            "El problema se intensifica durante las horas pico.",
+            "Se ha documentado el deterioro progresivo con fotografías.",
+            "La situación afecta particularmente a adultos mayores y niños.",
+            "Los comerciantes locales también han expresado su preocupación.",
+            "Se solicita seguimiento continuo hasta la resolución completa.",
+            "La comunidad está organizada para colaborar con las autoridades.",
+            "El problema coincide con fallas similares en zonas cercanas.",
+            "Se requiere coordinación entre múltiples dependencias municipales.",
+            "Los residentes están dispuestos a aportar recursos para la solución."
+        ]
+        contexto = random.choice(contextos_adicionales)
+        descripcion_principal = f"{descripcion_principal} {contexto}"
+    
+    # 20% de probabilidad de agregar información temporal específica
+    if random.random() < 0.2:
+        info_temporal = [
+            "La situación ha empeorado desde la semana pasada.",
+            "El problema es más evidente durante las primeras horas del día.",
+            "Las condiciones climáticas recientes han agravado la situación.",
+            "Se observa un patrón de deterioro acelerado en los últimos días.",
+            "El problema se presenta de manera intermitente pero frecuente.",
+            "La situación es crítica especialmente los fines de semana.",
+            "Durante las lluvias el problema se vuelve más peligroso.",
+            "En horario escolar representa mayor riesgo para los menores."
+        ]
+        tiempo = random.choice(info_temporal)
+        descripcion_principal = f"{descripcion_principal} {tiempo}"
+    
+    return descripcion_principal
 
 def getRandomInt(mini, maxi):
     return random.randint(mini, maxi)
@@ -606,7 +712,9 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
             titulo_base = random.choice(titulosCategoria)
             titulo = f"{titulo_base} #{offset + i + 1}"
             usuario_id = random.choice(usuarioIds)
-            descripcion = getRandomDescripcion(i, titulo)
+            # ✅ CAMBIO PRINCIPAL: Usar la nueva función con categoría
+            descripcion = getRandomDescripcion(categoria_id, titulo)
+            
             
             # Genera fecha de creación
             if use_custom_dates:
@@ -634,7 +742,7 @@ def main(total_reportes=1000000, offset=0, fecha_inicio='', fecha_fin=''):
         for retry in range(max_retries):
             try:
                 cursor.executemany(
-                    "INSERT INTO reportes (titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad, imagen_url, usuario_id, fecha_creacion, fecha_actualizacion) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                    "INSERT INTO reportes (titulo, descripcion, categoria_id, ubicacion, latitud, longitud, estado, prioridad, imagen_path, usuario_id, fecha_creacion, fecha_actualizacion) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     reportes
                 )
                 conn.commit()
