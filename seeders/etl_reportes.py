@@ -58,7 +58,7 @@ def ejecutar_etl():
         df['ubicacion'] = df['ubicacion'].fillna('').str.strip()
         df['estado'] = df['estado'].fillna('nuevo').str.strip().str.lower()
         df['prioridad'] = df['prioridad'].fillna('media').str.strip().str.lower()
-        df['imagen_url'] = df['imagen_url'].fillna('')
+        df['imagen_path'] = df['imagen_url'].fillna('')
         
         # 2. LIMPIEZA Y VALIDACIÓN DE COORDENADAS
         logger.info("Validando y limpiando coordenadas...")
@@ -224,7 +224,8 @@ def ejecutar_etl():
         columnas_principales = [
             'id', 'titulo', 'descripcion', 'categoria_id', 'categoria_nombre',
             'ubicacion', 'latitud', 'longitud', 'estado', 'prioridad', 
-            'usuario_id', 'usuario_nombre', 'fecha_creacion', 'fecha_actualizacion'
+            'usuario_id', 'usuario_nombre', 'fecha_creacion', 'fecha_actualizacion',
+            'imagen_path'
         ]
         
         columnas_derivadas = [col for col in df.columns if col not in columnas_principales]
