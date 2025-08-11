@@ -231,7 +231,6 @@ const reportsController = {
         "ubicacion",
         "imagen_path",
         "prioridad",
-        "estado",
       ];
 
       camposActualizables.forEach((campo) => {
