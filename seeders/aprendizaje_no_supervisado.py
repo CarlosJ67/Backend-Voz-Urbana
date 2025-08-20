@@ -3,13 +3,14 @@ import numpy as np
 from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
+from sklearn.metrics import silhouette_samples  # 📈 nuevo para histograma de silueta
 from sklearn.neighbors import NearestNeighbors
-from sklearn.ensemble import RandomForestRegressor  # ✅ AGREGADO
-from sklearn.model_selection import train_test_split  # ✅ AGREGADO
-from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error  # ✅ AGREGADO
+from sklearn.ensemble import RandomForestRegressor 
+from sklearn.model_selection import train_test_split  
+from sklearn.metrics import mean_absolute_error, r2_score, mean_squared_error  
 import matplotlib.pyplot as plt
 import joblib
-from datetime import datetime, timedelta  # ✅ AGREGADO timedelta
+from datetime import datetime, timedelta  
 import seaborn as sns
 import os
 import json
@@ -254,6 +255,53 @@ def crear_modelo_prediccion_reportes(df_resultados, analisis_zonas, grafico_path
         print(f"   Precisión: {max(0, (1 - mae/y.mean()))*100:.1f}%", file=sys.stderr)
         
         # ==========================================
+        # 📈 GRÁFICAS (SUPERVISADO) — 3 gráficos
+        # ==========================================
+        try:
+            os.makedirs("graficos", exist_ok=True)
+            base_dir = os.path.dirname(grafico_path_base) if grafico_path_base else "graficos"
+            timestamp_pred = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # 1) Predicho vs Real
+            plt.figure(figsize=(7,6))
+            plt.scatter(y_test, y_pred, alpha=0.7, edgecolors='white', linewidth=0.4)
+            min_v = min(np.min(y_test), np.min(y_pred))
+            max_v = max(np.max(y_test), np.max(y_pred))
+            plt.plot([min_v, max_v], [min_v, max_v], linestyle='--')
+            plt.title('Predicho vs Real (Regresión)')
+            plt.xlabel('Real')
+            plt.ylabel('Predicho')
+            plt.grid(True, alpha=0.2)
+            path_pred_vs_real = os.path.join(base_dir, f"sup_pred_vs_real_{timestamp_pred}.png")
+            plt.tight_layout(); plt.savefig(path_pred_vs_real, dpi=300, bbox_inches='tight', facecolor='white'); plt.close()
+
+            # 2) Histograma de residuales
+            resid = y_test - y_pred
+            plt.figure(figsize=(7,5))
+            plt.hist(resid, bins=20, alpha=0.85)
+            plt.title('Histograma de Residuales')
+            plt.xlabel('Residual (Real - Predicho)')
+            plt.ylabel('Frecuencia')
+            plt.grid(True, alpha=0.2)
+            path_resid = os.path.join(base_dir, f"sup_residuals_{timestamp_pred}.png")
+            plt.tight_layout(); plt.savefig(path_resid, dpi=300, bbox_inches='tight', facecolor='white'); plt.close()
+
+            # 3) Importancia de características
+            if hasattr(modelo_pred, "feature_importances_"):
+                importancias = modelo_pred.feature_importances_
+                order = np.argsort(importancias)[::-1]
+                plt.figure(figsize=(8,5))
+                plt.bar(range(len(importancias)), importancias[order], tick_label=np.array(features_cols)[order])
+                plt.title('Importancia de Características (RandomForest)')
+                plt.xticks(rotation=45, ha='right')
+                plt.ylabel('Importancia')
+                plt.grid(True, axis='y', alpha=0.2)
+                path_imp = os.path.join(base_dir, f"sup_feature_importance_{timestamp_pred}.png")
+                plt.tight_layout(); plt.savefig(path_imp, dpi=300, bbox_inches='tight', facecolor='white'); plt.close()
+        except Exception as e_plot_sup:
+            print(f"⚠️ Error generando gráficas supervisado: {str(e_plot_sup)}", file=sys.stderr)
+
+        # ==========================================
         # GENERAR PREDICCIONES Y RECOMENDACIONES
         # ==========================================
         
@@ -290,6 +338,8 @@ def crear_modelo_prediccion_reportes(df_resultados, analisis_zonas, grafico_path
                 })
             
             predicciones_futuras[f'zona_{zona_id}'] = predicciones_zona
+
+            
         
         # ==========================================
         # SISTEMA DE RECOMENDACIONES
@@ -708,6 +758,34 @@ def entrenar_modelo_zonas_criticas_avanzado(input_csv, auto_params=True, eps=Non
         grafico_path = os.path.join("graficos", f"zonas_criticas_avanzado_{timestamp}.png")
         generar_visualizacion_completa(df_resultados, analisis_zonas, n_clusters, grafico_path)
         log_print(f"✓ Visualización completa generada: {grafico_path}")
+
+        # 📈 EXTRA: 2 gráficas adicionales
+        try:
+            # 1) Tamaños de clúster (incluye ruido)
+            counts = df_resultados['cluster'].value_counts().sort_index()
+            plt.figure(figsize=(8,5))
+            counts.plot(kind='bar')
+            plt.title('Tamaño de Clúster (incluye -1=ruido)')
+            plt.xlabel('Cluster ID')
+            plt.ylabel('Número de reportes')
+            plt.grid(True, axis='y', alpha=0.2)
+            path_cluster_sizes = os.path.join("graficos", f"zonas_cluster_sizes_{timestamp}.png")
+            plt.tight_layout(); plt.savefig(path_cluster_sizes, dpi=300, bbox_inches='tight', facecolor='white'); plt.close()
+
+            # 2) Histograma de siluetas (solo puntos en clústeres válidos)
+            mask_valid = df_resultados['cluster'] != -1
+            if n_clusters > 1 and mask_valid.any():
+                sil_vals = silhouette_samples(features_scaled[mask_valid.values], df_resultados.loc[mask_valid, 'cluster'].values)
+                plt.figure(figsize=(8,5))
+                plt.hist(sil_vals, bins=20, alpha=0.85)
+                plt.title('Distribución de Silhouette (solo clústeres válidos)')
+                plt.xlabel('Silhouette')
+                plt.ylabel('Frecuencia')
+                plt.grid(True, alpha=0.2)
+                path_sil = os.path.join("graficos", f"zonas_silhouette_{timestamp}.png")
+                plt.tight_layout(); plt.savefig(path_sil, dpi=300, bbox_inches='tight', facecolor='white'); plt.close()
+        except Exception as e_unsup_plot:
+            log_print(f"⚠️ Error generando gráficas adicionales (no supervisado): {str(e_unsup_plot)}")
 
         log_print(f"\n=== ENTRENAMIENTO COMPLETADO EXITOSAMENTE ===")
         log_print(f"Zonas críticas detectadas: {n_clusters}")
