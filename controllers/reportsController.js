@@ -109,10 +109,16 @@ const reportsController = {
             model: User,
             attributes: ["id", "nombre", "email"],
           },
+          {
+            model: Categoria, 
+            attributes: ["id", "nombre", "descripcion", "icono"],
+          }
         ],
         order: [["fecha_creacion", "DESC"]],
       });
-
+      if (!reports || reports.length === 0) {
+        return res.status(404).json({ message: "Reporte no encontrado" });
+      }
       res.json(reports);
     } catch (error) {
       res
