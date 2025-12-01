@@ -1,4 +1,4 @@
-const { Report, User } = require("../models");
+const { Report, User, Categoria } = require("../models");
 const Sequelize = require("sequelize");
 
 const reportsController = {
@@ -137,6 +137,10 @@ const reportsController = {
             model: User,
             attributes: ["id", "nombre", "email"],
           },
+          {
+            model: Categoria, // ✅ Ahora Categoria está importado
+            attributes: ["id", "nombre", "descripcion", "icono"],
+          }
         ],
       });
 
@@ -146,6 +150,7 @@ const reportsController = {
 
       res.json(report);
     } catch (error) {
+      console.error('Error en getReportById:', error);
       res
         .status(500)
         .json({ message: "Error al obtener el reporte", error: error.message });
