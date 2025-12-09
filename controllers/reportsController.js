@@ -1,4 +1,5 @@
 const { Report, User, Categoria } = require("../models");
+const { reportesCreados, erroresAplicacion } = require('../middleware/metrics');
 const Sequelize = require("sequelize");
 
 const reportsController = {
@@ -62,6 +63,7 @@ const reportsController = {
       const fecha_creacion = reportWithUser.fecha_creacion ? new Date(reportWithUser.fecha_creacion).toISOString() : null;
       const fecha_actualizacion = reportWithUser.fecha_actualizacion ? new Date(reportWithUser.fecha_actualizacion).toISOString() : null;
 
+      reportesCreados.inc();
       // Responder con objeto enriquecido
       res.status(201).json({
         message: "Reporte creado exitosamente",
@@ -73,10 +75,14 @@ const reportsController = {
         }
       });
     } catch (error) {
-      res
-        .status(500)
-        .json({ message: "Error al crear reporte", error: error.message });
-    }
+    // Registrar error en métricas
+    erroresAplicacion.labels('database_error', '/api/reports').inc();
+    
+    res.status(500).json({ 
+      message: "Error al crear reporte", 
+      error: error.message 
+    });
+  }
   },
 
   async getAllReports(req, res) {
