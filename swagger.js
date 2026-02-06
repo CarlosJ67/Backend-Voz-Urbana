@@ -9,7 +9,7 @@ const options = {
       description: 'Documentación de la API Voz Urbana'
     },
     servers: [
-      { url: 'https://backend-voz-urbana.onrender.com' }
+      { url: 'http://localhost:3000' }
     ],
     components: {
       securitySchemes: {

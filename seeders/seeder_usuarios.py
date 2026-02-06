@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': '12345',  # Cambiar por tu password real
+    'password': '123456',  # Cambiar por tu password real
     'database': 'voz_urbana',
     'port': 3306 # Cambiar por tu puerto real
 }

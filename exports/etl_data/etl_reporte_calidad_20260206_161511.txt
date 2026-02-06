@@ -1,0 +1,62 @@
+=== REPORTE DE CALIDAD ETL ===
+
+Fecha de procesamiento: 2026-02-06 16:15:11.970443
+Archivo generado: etl_reportes_limpios_20260206_161511.csv
+
+ESTADÍSTICAS DE PROCESAMIENTO:
+- registros_iniciales: 1002
+- registros_finales: 1002
+- coords_invalidas: 0
+- coords_fuera_rango: 0
+- fechas_invalidas: 0
+- duplicados_eliminados: 0
+- outliers_geograficos: 61
+- tasa_retencion: 100.0
+
+DISTRIBUCIÓN POR PRIORIDAD:
+- alta: 562 (56.1%)
+- media: 295 (29.4%)
+- baja: 145 (14.5%)
+
+RANGOS DE COORDENADAS:
+- Latitud: 20.250100 a 20.281600
+- Longitud: -97.970000 a -97.950000
+
+COLUMNAS GENERADAS (37):
+- id
+- titulo
+- descripcion
+- categoria_id
+- categoria_nombre
+- ubicacion
+- latitud
+- longitud
+- estado
+- prioridad
+- usuario_id
+- usuario_nombre
+- fecha_creacion
+- fecha_actualizacion
+- imagen_path
+- año_creacion
+- cuadrante
+- cuadrante_lat
+- cuadrante_lng
+- dia_creacion
+- dia_semana_creacion
+- distancia_centro_ciudad
+- es_fin_semana
+- es_horario_laboral
+- es_horario_nocturno
+- es_outlier_geografico
+- estado_numerico
+- hora_creacion
+- mes_creacion
+- minuto_creacion
+- nombre_dia_semana
+- nombre_mes
+- prioridad_numerica
+- procesamiento_rapido
+- semana_año
+- tiempo_procesamiento
+- trimestre

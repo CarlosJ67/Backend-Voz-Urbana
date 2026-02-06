@@ -10,7 +10,7 @@ DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
     #'password': '1234',
-    'password': '12345',
+    'password': '123456',
     'database': 'voz_urbana',
     #'port': 3307
     'port': 3306
