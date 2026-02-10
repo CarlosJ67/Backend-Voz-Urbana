@@ -1,0 +1,55 @@
+# INSTALACIÓN DE DEPENDENCIAS PYTHON
+# Proyecto: Voz Urbana Backend
+
+## Archivos creados:
+
+### 1. requirements.txt
+Lista todas las dependencias necesarias de Python
+
+### 2. instalar_python_deps.bat (Windows)
+Script automático para instalar todas las dependencias
+
+### 3. verificar_python_deps.py
+Script para verificar que todas las dependencias están instaladas
+
+## INSTRUCCIONES DE USO:
+
+### Opción 1: Instalación automática (Windows)
+```
+Doble clic en: instalar_python_deps.bat
+```
+
+### Opción 2: Instalación manual
+```bash
+pip install -r requirements.txt
+```
+
+### Opción 3: Instalación individual (si tienes problemas)
+```bash
+pip install mysql-connector-python
+pip install scikit-learn pandas numpy matplotlib
+pip install sqlalchemy pymysql bcrypt joblib
+```
+
+## VERIFICACIÓN:
+```bash
+python verificar_python_deps.py
+```
+
+## DEPENDENCIAS INCLUIDAS:
+- mysql-connector-python: Conexión a MySQL
+- scikit-learn: Machine Learning y clustering
+- pandas: Manejo y análisis de datos
+- numpy: Cálculos numéricos
+- matplotlib: Gráficos y visualizaciones
+- sqlalchemy: ORM para base de datos
+- pymysql: Driver MySQL adicional
+- bcrypt: Encriptación de contraseñas
+- joblib: Serialización de modelos ML
+
+## SCRIPTS QUE USAN ESTAS DEPENDENCIAS:
+- seeders/seeder_usuarios.py
+- seeders/seeder_reportes.py
+- seeders/seeder_comentarios.py
+- seeders/etl_reportes.py
+- seeders/aprendizaje_no_supervisado.py

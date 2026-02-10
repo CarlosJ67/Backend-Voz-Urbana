@@ -1,0 +1,21 @@
+# Dependencias de Python para Voz Urbana
+# Para instalar todas las dependencias ejecutar: pip install -r requirements.txt
+
+# Conexión a base de datos MySQL
+mysql-connector-python==9.5.0
+sqlalchemy>=2.0.0
+pymysql>=1.0.0
+
+# Machine Learning y análisis de datos
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+joblib>=1.3.0
+
+# Seguridad y encriptación
+bcrypt>=4.0.0
+
+# Utilidades adicionales para análisis
+seaborn>=0.12.0
+plotly>=5.15.0
